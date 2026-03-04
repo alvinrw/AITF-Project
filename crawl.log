@@ -1,0 +1,247 @@
+[BOT] Polling perintah Telegram aktif.
+[*] Loaded 90 visited URLs dari visited_urls.txt
+
+[*] ===== SIKLUS KE-1 (124 kata kunci) =====
+[*] Searching DuckDuckGo: jurnal kemiskinan multidimensi jawa timur 2022 2023
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 10 results.
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/702252786559658724.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/341183174369490965.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/372845585812508612.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/996549861240104499.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/148913389471709925.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/1652581455720622260.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/2023282083434938868.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/147623823356790365.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/2002731639144439347.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/766428094903793284.html
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: masalah akses air bersih di daerah kering jawa timur
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 10 results.
+[-] Skipped (Blocked/Noise Domain): https://id.wikipedia.org/wiki/Masalah
+[*] Extracting: https://kbbi.co.id/arti-kata/masalah
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'kbbi.co.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Not Relevant/Poor Quality): https://kbbi.co.id/arti-kata/masalah
+[-] Skipped (Blocked/Noise Domain): https://catatandaniel.com/15-pengertian-masalah-menurut-para-ahli/
+[*] Extracting: https://kbbi.web.id/masalah
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'kbbi.web.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Not Relevant/Poor Quality): https://kbbi.web.id/masalah
+[-] Skipped (Blocked/Noise Domain): https://mediaindonesia.com/humaniora/842809/contoh-masalah-sosial-di-indonesia-faktor-penyebab-dan-solusi
+[*] Extracting: https://staidagresik.ac.id/rumusan-masalah-tujuan-dan-manfaat/
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'staidagresik.ac.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[+] Saved: 4 Manfaat Rumusan Masalah, Tujuan, dan Manfaat yang Perlu An...
+[-] Skipped (Blocked/Noise Domain): https://visitpare.com/informasi-pendidikan/pengertian-masalah/
+[-] Skipped (Blocked/Noise Domain): https://www.gramedia.com/literasi/masalah-sosial/
+[-] Skipped (Blocked/Noise Domain): https://artikbbi.com/masalah/
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: kemiskinan anak jawa timur perlindungan sosial
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 15 results.
+[-] Skipped (File Type): https://www.unicef.org/malaysia/media/4631/file/Living+on+the+Edge+(key+findings)(BM).pdf
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/kebijakan-sosial/laporan/kemiskinan-anak-di-indonesia
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/stories/child-poverty
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/kebijakan-sosial/siaran-pers/laporan-komprehensif-terkait-kesejahteraan-anak-di-indonesia
+[-] Skipped (File Type): https://www.unicef.org/indonesia/id/media/25621/file/gambaran-singkat-anak-indonesia-oktober-2025.pdf
+[-] Skipped (File Type): https://www.unicef.org/indonesia/media/21331/file/UNICEF+Laporan+Tahunan+2023.pdf.pdf
+[-] Skipped (File Type): https://www.unicef.org/indonesia/sites/unicef.org.indonesia/files/2020-07/Situasi-Anak-di-Indonesia-2020.pdf
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/coronavirus/laporan/ringkasan-kebijakan-dampak-covid-19-kemiskinan-mobilitas-anak
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/kebijakan-sosial/laporan/deprivasi-hak-anak-multidimensi-di-indonesia
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/kebijakan-sosial/laporan/ringkasan-kebijakan-analisis-deprivasi-multidimensi-hak-anak-di-indonesia
+[-] Skipped (Blocked/Noise Domain): https://www.akurat.co/nasional/828477/mensos-ambil-ikrar-wali-asrama-dan-asuh-sekolah-rakyat-siap-bimbing-siswa-sepenuh-hati
+[-] Skipped (Blocked/Noise Domain): https://www.instagram.com/p/DVcy3-Ak5cU/
+[-] Skipped (Blocked/Noise Domain): https://kempalan.com/2026/03/03/sapa-bansos-di-kediri-gubernur-khofifah-salurkan-rp16616-miliar/
+[*] Extracting: https://infonews.id/baca-9219-gubernur-khofifah-salurkan-bantuan-dan-tali-asih-senilai-rp16-miliar-untuk-masyarakat-kabupaten-dan-kota-kediri
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'infonews.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[+] Saved: Gubernur Khofifah Salurkan Bantuan dan Tali Asih Senilai Rp1...
+[*] Extracting: https://www.sentrapos.co.id/pemkab-lamongan-salurkan-bansos-ramadhan-ke-46-lksa-perkuat-perlindungan-anak/
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'www.sentrapos.co.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[+] Saved: Pemkab Lamongan Salurkan Bansos Ramadhan ke 46 LKSA, Perkuat...
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: faktor penyebab kemiskinan struktural Indonesia
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 5 results.
+[-] Skipped (Blocked/Noise Domain): https://forum.rotter.se/index.php?topic=192401.0
+[-] Skipped (Blocked/Noise Domain): https://forum.rotter.se/index.php?action=profile;area=showposts;u=3110
+[-] Skipped (Blocked/Noise Domain): https://forum.rotter.se/index.php?topic=29645.0
+[-] Skipped (Blocked/Noise Domain): https://forum.rotter.se/index.php?topic=69096.0
+[-] Skipped (Blocked/Noise Domain): https://forum.rotter.se/index.php?topic=68533.0
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: penyandang disabilitas miskin di jawa timur program bansos
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 15 results.
+[-] Skipped (Blocked/Noise Domain): https://www.qcc.com/firm/ce3a6ceebd90f52b5b6296db595bb461.html
+[-] Skipped (Blocked/Noise Domain): https://www.11467.com/qiye/207820595.htm
+[-] Skipped (Blocked/Noise Domain): https://www.nanjingpincha.com/
+[-] Skipped (Blocked/Noise Domain): https://zhuanlan.zhihu.com/p/1975210552973341332
+[-] Skipped (Blocked/Noise Domain): https://aiqicha.baidu.com/company_detail_39379362222233
+[-] Skipped (Blocked/Noise Domain): https://support.eonet.jp/inquiry/
+[-] Skipped (Blocked/Noise Domain): https://eo-hikari.net/contract
+[-] Skipped (Blocked/Noise Domain): https://support.eonet.jp/inquiry/eomypage.html
+[-] Skipped (Blocked/Noise Domain): https://eonet.jp/
+[-] Skipped (Blocked/Noise Domain): https://support.eonet.jp/
+[-] Skipped (Blocked/Noise Domain): https://stuart-suits.com.au/
+[-] Skipped (Blocked/Noise Domain): https://stuart-suits.com.au/tailor-made-suits-stuart-suits-brisbane/
+[-] Skipped (Blocked/Noise Domain): https://stuart-suits.com.au/our-range/
+[-] Skipped (Blocked/Noise Domain): https://stuart-suits.com.au/contact/
+[-] Skipped (Blocked/Noise Domain): https://stuart-suits.com.au/stuart-suits-brisbane-about/
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: kriteria keluarga miskin menurut BPS
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 5 results.
+[-] Skipped (Blocked/Noise Domain): https://jazykovaporadna.sme.sk/h/kritérium/11137/
+[-] Skipped (Blocked/Noise Domain): https://support.microsoft.com/id-id/office/fungsi-if-rumus-bertumpuk-dan-menghindari-kesalahan-0b22ff44-f149-44ba-aeb5-4ef99da241c8
+[-] Skipped (Blocked/Noise Domain): https://jazykovaporadna.sme.sk/q/6334/
+[-] Skipped (Blocked/Noise Domain): https://support.microsoft.com/id-id/office/menggunakan-fungsi-countif-di-microsoft-excel-e0de10c6-f885-4e71-abb4-1f464816df34
+[-] Skipped (Blocked/Noise Domain): https://support.microsoft.com/id-id/topic/contoh-kriteria-kueri-3197228c-8684-4552-ac03-aba746fb29d8
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: program rumah tidak layak huni jawa timur rehab
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 10 results.
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/453129030
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/1187483898382182339.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/212053857808165365.html
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/46670619
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/1952854613200966422
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/89541033.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/1396653890666014820.html
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/1380898496977110899.html
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/1933256410755474448
+[-] Skipped (Blocked/Noise Domain): https://zhidao.baidu.com/question/995536718705243939.html
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: kemiskinan di kabupaten blitar petani buruh tani
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 5 results.
+[-] Skipped (File Type): https://www.unicef.org/malaysia/media/4631/file/Living+on+the+Edge+(key+findings)(BM).pdf
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/kebijakan-sosial/laporan/kemiskinan-anak-di-indonesia
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/stories/child-poverty
+[-] Skipped (Blocked/Noise Domain): https://www.unicef.org/indonesia/id/kebijakan-sosial/siaran-pers/laporan-komprehensif-terkait-kesejahteraan-anak-di-indonesia
+[-] Skipped (File Type): https://www.unicef.org/indonesia/id/media/25621/file/gambaran-singkat-anak-indonesia-oktober-2025.pdf
+[*] Cooling down 5s before next keyword...
+[*] Siklus 1 selesai. Jeda 2 menit sebelum siklus berikutnya...
+
+[!] Crawler berhenti. Total siklus selesai: 1. Data ada di 'data_raw'.
+[BOT] Polling perintah Telegram aktif.
+[*] Loaded 93 visited URLs dari visited_urls.txt
+
+[*] ===== SIKLUS KE-1 (124 kata kunci) =====
+[*] Searching DuckDuckGo: human capital and poverty in East Java journal
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 14 results.
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/623880540
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/47613422
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/640631824
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/35868439
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/379361192
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/23527334?sort=created
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/489190381
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/1905790621077185234
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/623439200
+[-] Skipped (Blocked/Noise Domain): https://www.zhihu.com/question/386122771
+[-] Skipped (Blocked/Noise Domain): https://journals.sagepub.com/doi/pdf/10.1177/26922932261424972
+[-] Skipped (Blocked/Noise Domain): https://github.com/theSAKI/Book-Recommendation-System/blob/main/books.csv
+[-] Skipped (Blocked/Noise Domain): https://github.com/chinnichaitanya/spellwise/blob/master/examples/data/american-english
+[*] Extracting: https://jurnal.kemendagri.go.id/index.php/jbp/article/download/2749/778
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'jurnal.kemendagri.go.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[*] Parsing PDF: https://jurnal.kemendagri.go.id/index.php/jbp/article/download/2749/778
+[+] Saved: 778...
+[!] Error https://jurnal.kemendagri.go.id/index.php/jbp/article/download/2749/778: cannot access local variable 'soup' where it is not associated with a value
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: daftar program dinas sosial jawa timur penanganan kemiskinan
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 15 results.
+[-] Skipped (Blocked/Noise Domain): https://support.google.com/accounts/answer/27441?hl=id&co=GENIE.Platform=Desktop
+[-] Skipped (Blocked/Noise Domain): https://support.google.com/mail/answer/56256?hl=en-ID
+[-] Skipped (Blocked/Noise Domain): https://support.google.com/mail/answer/56256?hl=id
+[-] Skipped (Blocked/Noise Domain): https://support.google.com/business/answer/7039811?hl=id
+[-] Skipped (Blocked/Noise Domain): https://support.google.com/adsense/answer/7402253?hl=id
+[-] Skipped (Blocked/Noise Domain): https://id.wikipedia.org/wiki/Indonesia
+[*] Extracting: https://etd.repository.ugm.ac.id/home/detail_pencarian_downloadfiles/1697458
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'etd.repository.ugm.ac.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Unsupported Content-Type: application/octet-stream): https://etd.repository.ugm.ac.id/home/detail_pencarian_downloadfiles/1697458
+[-] Skipped (Blocked/Noise Domain): https://www.bisnis.com/index
+[-] Skipped (File Type): https://ppid.bps.go.id/upload/doc/LAPORAN_KINERJA_BPS_KABUPATEN_BONDOWOSO_2025_1772158201.pdf
+[*] Extracting: https://dinsos.jakarta.go.id/index.php/berita/kepala-dinas-sosial-dki-jakarta-iqbal-akbarudin-menjadi-salah-satu-tim-pembina-posyandu-provinsi-dki-jakarta-masa-bakti-2025-2030
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'dinsos.jakarta.go.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[+] Saved: Kepala Dinas Sosial DKI Jakarta Iqbal Akbarudin menjadi sala...
+[-] Skipped (Blocked/Noise Domain): https://kumparan.com/
+[*] Extracting: https://tirto.id/
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'tirto.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[!] Error https://tirto.id/: 403 Client Error: Forbidden for url: https://tirto.id/
+[-] Skipped (File Type): https://rkpd.salatiga.go.id/wp-content/uploads/2026/02/Ranwal-RKPD-2027.pdf
+[-] Skipped (Blocked/Noise Domain): https://www.tempo.co/harian
+[*] Extracting: http://www.bkkbn.go.id/
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'www.bkkbn.go.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'www.kemendukbangga.go.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Not Relevant/Poor Quality): http://www.bkkbn.go.id/
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: kondisi sosial ekonomi lamongan jawa timur nelayan
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 14 results.
+[*] Extracting: https://kbbi.co.id/arti-kata/kondisi
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'kbbi.co.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Not Relevant/Poor Quality): https://kbbi.co.id/arti-kata/kondisi
+[-] Skipped (Blocked/Noise Domain): https://internasional.kompas.com/read/2026/03/01/064521270/update-perang-as-israel-vs-iran-kondisi-khamenei-hingga-penutupan
+[*] Extracting: https://tirto.id/live-update-perang-as-israel-vs-iran-kondisi-terkini-3-negara-hrVq
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'tirto.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[!] Error https://tirto.id/live-update-perang-as-israel-vs-iran-kondisi-terkini-3-negara-hrVq: 403 Client Error: Forbidden for url: https://tirto.id/live-update-perang-as-israel-vs-iran-kondisi-terkini-3-negara-hrVq
+[*] Extracting: https://kbbi.web.id/kondisi
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'kbbi.web.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Not Relevant/Poor Quality): https://kbbi.web.id/kondisi
+[-] Skipped (Blocked/Noise Domain): https://artikbbi.com/kondisi/
+[-] Skipped (Blocked/Noise Domain): https://www.kamusbesar.com/kondisi
+[-] Skipped (Blocked/Noise Domain): https://www.sinonim.com/arti/kondisi
+[*] Extracting: https://kamuskita.id/kbbi/kondisi
+C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'kamuskita.id'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+[-] Skipped (Not Relevant/Poor Quality): https://kamuskita.id/kbbi/kondisi
+[-] Skipped (Blocked/Noise Domain): https://en.bab.la/dictionary/indonesian-english/kondisi
+[-] Skipped (Blocked/Noise Domain): https://www.artikata.com/arti-335924-kondisi.html
+[-] Skipped (Blocked/Noise Domain): https://scite.ai/reports/dilema-sosial-representasi-sosial-tentang-jMEgQZO
+[-] Skipped (Blocked/Noise Domain): https://news.detik.com/
+[-] Skipped (File Type): https://eprints.undip.ac.id/17670/1/YULI_HARTATI.pdf
+[-] Skipped (File Type): https://simlitabmas.unwira.ac.id/files/laporankemajuan/Laporan_Kemajuan12.pdf
+[*] Cooling down 5s before next keyword...
+[*] Searching DuckDuckGo: penyandang disabilitas miskin di jawa timur program bansos
+c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py:301: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  with DDGS() as ddgs:
+[*] Found 15 results.
+[-] Skipped (Blocked/Noise Domain): https://www.shuhari.bike/
+[-] Skipped (Blocked/Noise Domain): https://shuharibikeworks.com/
+[-] Skipped (Blocked/Noise Domain): https://www.shuhari.bike/bikes
+[-] Skipped (Blocked/Noise Domain): https://www.shuhari.bike/shopinfo
+[-] Skipped (Blocked/Noise Domain): https://www.shuhari.bike/shop-info
+Traceback (most recent call last):
+  File "c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py", line 353, in <module>
+    crawler.extract_content(link)
+  File "c:\Users\alvin\Documents\Coolyeah\AITF\Crawl\main.py", line 206, in extract_content
+    print(f"[-] Skipped (Blocked/Noise Domain): {url}")
+  File "C:\Users\alvin\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 91-97: character maps to <undefined>
