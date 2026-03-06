@@ -122,10 +122,30 @@ class TelegramNotifier:
         return self._stop_requested
 
     def start_polling(self):
-        """Jalankan polling perintah di background thread."""
+        """Jalankan polling perintah di background thread.
+        Sebelum mulai, drain semua update lama agar perintah
+        dari sesi sebelumnya (misal /stop) tidak ikut diproses.
+        """
+        self._skip_stale_updates()
         t = threading.Thread(target=self._poll_loop, daemon=True)
         t.start()
         print("[BOT] Polling perintah Telegram aktif.")
+
+    def _skip_stale_updates(self):
+        """Set last_update_id ke update paling baru sehingga
+        semua perintah lama di-skip (tidak diproses)."""
+        try:
+            resp = requests.get(
+                f"{self.base_url}/getUpdates",
+                params={"offset": -1, "timeout": 0},
+                timeout=5,
+            ).json()
+            results = resp.get("result", [])
+            if results:
+                self.last_update_id = results[-1]["update_id"]
+                print(f"[BOT] Skip {self.last_update_id} update lama.")
+        except Exception:
+            pass  # Kalau gagal, lanjut saja dari update_id 0
 
     def _poll_loop(self):
         while True:

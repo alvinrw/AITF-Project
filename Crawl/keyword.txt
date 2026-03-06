@@ -137,3 +137,64 @@ jurnal perlindungan sosial kemiskinan Indonesia
 studi kasus kemiskinan desa jawa timur penelitian
 evaluasi program pemberdayaan masyarakat miskin jatim
 analisis spasial kemiskinan jawa timur SIG
+
+# ===== KRITERIA & MEKANISME PENERIMA BLT =====
+kriteria penerima BLT dana desa 2024
+syarat penerima bantuan langsung tunai
+mekanisme penetapan keluarga penerima manfaat KPM
+verifikasi validasi data kemiskinan musdes muskel
+inklusi eksklusi error program bansos indonesia
+targeting bantuan sosial ketepatan sasaran indonesia
+penentuan desil 1 2 3 4 DTKS jawa timur
+proses pendataan kemiskinan kelurahan desa jawa timur
+siapa yang berhak mendapat BLT kriteria kelayakan
+karakteristik rumah tangga miskin penerima PKH BPNT
+
+# ===== INDIKATOR KEMISKINAN BERBASIS VARIABEL RUMAH TANGGA =====
+pengeluaran per kapita keluarga miskin jawa timur
+konsumsi rumah tangga miskin per bulan indonesia
+daya listrik 450VA 900VA keluarga kurang mampu
+luas bangunan rumah keluarga miskin per kapita
+kepemilikan aset keluarga miskin indonesia
+pendidikan kepala keluarga miskin jawa timur
+jumlah tanggungan anggota keluarga miskin
+pendapatan di bawah garis kemiskinan jawa timur
+profil sosial ekonomi rumah tangga miskin
+kondisi fisik rumah keluarga miskin jawa timur
+akses sanitasi air bersih keluarga miskin
+kepemilikan kendaraan aset produktif keluarga miskin
+
+# ===== DATA DTKS & PENDATAAN KEMISKINAN =====
+pemutakhiran data terpadu kesejahteraan sosial
+regsosek registrasi sosial ekonomi 2022 jawa timur
+P3KE pendataan keluarga miskin ekstrem jawa timur
+musyawarah desa penetapan penerima bansos
+data kemiskinan tingkat desa kelurahan jawa timur
+NIK KTP KK syarat pendaftaran bansos
+integrasi data DTKS desa kelurahan kecamatan
+kesalahan pendataan bansos tidak tepat sasaran jawa timur
+
+# ===== SURVEI & INSTRUMEN PENGUKURAN KEMISKINAN =====
+SUSENAS survei sosial ekonomi nasional jawa timur 2023
+proxy means test kemiskinan indonesia
+penilaian kemampuan ekonomi rumah tangga miskin
+indeks komposit kemiskinan jawa timur
+PMT scoring keluarga miskin kriteria
+
+# ===== DETAIL PROGRAM BLT & PENCAIRAN =====
+besaran BLT dana desa 2024 per bulan per KK
+besaran PKH 2024 per kategori komponen
+nilai bantuan BPNT sembako 2024 per bulan
+penyaluran BLT melalui PT Pos kantor pos
+KKS kartu keluarga sejahtera pencairan bansos
+e-warong agen bank penyalur bansos sembako
+graduasi mandiri penerima PKH BPNT keluarga mampu
+pencairan bansos non tunai e-money jawa timur
+
+# ===== JURNAL AKADEMIK TAMBAHAN =====
+jurnal ketepatan sasaran program bansos jawa timur
+penelitian proxy means test klasifikasi kemiskinan indonesia
+machine learning prediksi kemiskinan rumah tangga indonesia
+studi efektivitas BLT pengurangan kemiskinan pedesaan jawa timur
+analisis faktor penentu kemiskinan rumah tangga jawa timur
+model klasifikasi kelayakan penerima bantuan sosial

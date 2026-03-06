@@ -1,14 +1,27 @@
 import os
 import io
+import re
+import sys
 import requests
 import json
 import time
 import hashlib
+import threading
+import urllib3
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from duckduckgo_search import DDGS
 from bot_monitor import TelegramNotifier
+import config
+
+# Fix: Paksa print() di Windows menggunakan UTF-8 agar tidak crash
+# saat mencetak karakter khusus/emoji ke console (menyebabkan UnicodeEncodeError).
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 try:
     import pdfplumber
     PDF_SUPPORT = True
@@ -16,356 +29,440 @@ except ImportError:
     PDF_SUPPORT = False
     print("[!] pdfplumber tidak ditemukan. Jalankan: pip install pdfplumber")
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# ── Konfigurasi jumlah worker ──────────────────────────────────────────────
+NUM_CRAWL_WORKERS  = config.NUM_CRAWL_WORKERS
+SEARCH_DELAY       = config.SEARCH_DELAY
+REQUEST_DELAY      = 1.0  # detik antar request per thread (dalam lock)
+
+# Direktori tempat main.py berada — semua path file dicari relatif ke sini
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 class WebCrawlerAI:
-    def __init__(self, output_dir="data_raw", blocked_file="blocked_domain.txt", priority_file="domain_priority.txt", keyword_file="keyword.txt", notifier=None, visited_file="visited_urls.txt"):
-        self.output_dir = output_dir
-        self.visited_file = visited_file
-        self.visited_urls = self._load_visited()
-        self.content_hashes = set() # Untuk cegah data duplikat konten
-        self.blocked_domains = self._load_list(blocked_file)
-        self.priority_domains = self._load_list(priority_file)
-        self.search_keywords = self._load_list(keyword_file)
-        self.notifier = notifier
-        
-        # --- FILTER RELEVANSI KETAT ---
-        # Wajib ada minimal satu dari CORE (Inti Masalah)
+    def __init__(
+        self,
+        output_dir="data_raw",
+        blocked_file="blocked_domain.txt",
+        priority_file="domain_priority.txt",
+        keyword_file="keyword.txt",
+        notifier=None,
+        visited_file="visited_urls.txt",
+    ):
+        # Resolve semua path relatif ke direktori script (bukan cwd)
+        def _abspath(p):
+            return p if os.path.isabs(p) else os.path.join(SCRIPT_DIR, p)
+
+        self.output_dir   = _abspath(output_dir)
+        self.visited_file = _abspath(visited_file)
+        self.notifier     = notifier
+        blocked_file  = _abspath(blocked_file)
+        priority_file = _abspath(priority_file)
+        keyword_file  = _abspath(keyword_file)
+
+        # ── Shared state (thread-safe) ───────────────────────────────────────
+        self._visited_lock = threading.Lock()
+        self._hash_lock    = threading.Lock()
+        self._write_lock   = threading.Lock()
+        self._ddg_lock     = threading.Lock()   # satu search DuckDuckGo dalam satu waktu
+
+        self.visited_urls  = self._load_visited()
+        self.content_hashes = set()
+
+        # ── Konfigurasi domain & keyword ────────────────────────────────────
+        self.blocked_domains   = self._load_list(blocked_file)
+        self.priority_domains  = self._load_list(priority_file)
+        self.search_keywords   = self._load_list(keyword_file)
+
+        # ── Filter relevansi ─────────────────────────────────────────────────
         self.core_keywords = [
             # Kemiskinan
             'miskin', 'kemiskinan', 'poverty',
             # BLT & Bansos
             'blt', 'bansos', 'bantuan langsung tunai', 'penerima bantuan',
             # Program Sosial
-            'pkh', 'dtks', 'desil', 'kip', 'bpnt', 
+            'pkh', 'dtks', 'desil', 'kip', 'bpnt',
             # Rentan Sosial
             'rentan', 'marjinal', 'subsidi', 'graduasi',
         ]
-        # Wajib ada minimal satu dari CONTEXT (Lokasi/Sumber/Konteks)
         self.context_keywords = [
-            # Umum Jatim
             'jatim', 'jawa timur',
-            # Instansi/Program
             'bps', 'sosial', 'bansos', 'bantuan', 'dana desa', 'puspa', 'pkh', 'dtks',
-            # 38 Kabupaten/Kota Jawa Timur
-            'surabaya', 'malang', 'kediri', 'blitar', 'mojokerto', 'madiun', 'probolinggo', 'pasuruan',
-            'batu', 'madura', 'bangkalan', 'sampang', 'pamekasan', 'sumenep',
-            'sidoarjo', 'gresik', 'lamongan', 'tuban', 'bojonegoro',
-            'jombang', 'nganjuk', 'magetan', 'ngawi', 'ponorogo', 'pacitan', 'trenggalek', 'tulungagung',
-            'blitar', 'kediri', 'jember', 'banyuwangi', 'situbondo', 'bondowoso',
-            'lumajang', 'probolinggo', 'pasuruan', 'malang',
-            # Wilayah Khusus
-            'tapal kuda', 'mataraman', 'arek', 'pantura', 'madura',
+            'surabaya', 'malang', 'kediri', 'blitar', 'mojokerto', 'madiun',
+            'probolinggo', 'pasuruan', 'batu', 'madura', 'bangkalan', 'sampang',
+            'pamekasan', 'sumenep', 'sidoarjo', 'gresik', 'lamongan', 'tuban',
+            'bojonegoro', 'jombang', 'nganjuk', 'magetan', 'ngawi', 'ponorogo',
+            'pacitan', 'trenggalek', 'tulungagung', 'jember', 'banyuwangi',
+            'situbondo', 'bondowoso', 'lumajang',
+            'tapal kuda', 'mataraman', 'arek', 'pantura',
         ]
-        
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-            print(f"[*] Folder output created: {self.output_dir}")
+
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    # =========================================================================
+    # HELPERS
+    # =========================================================================
 
     def _load_list(self, filename):
         if os.path.exists(filename):
             with open(filename, 'r', encoding='utf-8') as f:
-                return [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                return [l.strip() for l in f if l.strip() and not l.startswith('#')]
         return []
 
     def _load_visited(self):
-        """Load visited URLs dari file agar tidak crawl ulang antar run."""
         if os.path.exists(self.visited_file):
             with open(self.visited_file, 'r', encoding='utf-8') as f:
-                urls = {line.strip() for line in f if line.strip()}
-            print(f"[*] Loaded {len(urls)} visited URLs dari {self.visited_file}")
+                urls = {l.strip() for l in f if l.strip()}
+            print(f"[*] Loaded {len(urls):,} visited URLs dari {self.visited_file}")
             return urls
         return set()
 
     def _save_visited(self, url):
-        """Append satu URL baru ke file visited secara incremental."""
-        with open(self.visited_file, 'a', encoding='utf-8') as f:
-            f.write(url + '\n')
+        with self._write_lock:
+            with open(self.visited_file, 'a', encoding='utf-8') as f:
+                f.write(url + '\n')
 
     def _get_hash(self, text):
         return hashlib.md5(text.encode('utf-8')).hexdigest()
 
+    # =========================================================================
+    # KATEGORISASI & SCORING
+    # =========================================================================
+
     def get_source_type(self, url):
-        """Kategorisasi otomatis berdasarkan pola domain."""
         domain = urlparse(url).netloc.lower()
-        # Pemerintah: go.id, lembaga resmi
         if any(x in domain for x in ['go.id', 'tnp2k', 'bappeda', 'dinsos', 'kemensos', 'bps']):
             return 'government'
-        # Akademik: ac.id, journal, ejournal, repository
         if any(x in domain for x in ['ac.id', 'journal', 'ejournal', 'repository', 'jurnal']):
             return 'academic'
-        # Berita & Lainnya
         return 'news'
 
     def get_quality_score(self, text, url):
-        """Skoring kualitas 0-100 untuk auto-curation."""
-        score = 0
+        score      = 0
         text_lower = text.lower()
-        # Panjang teks (max 40 poin)
         score += min(40, len(text) // 100)
-        # Kepadatan keyword core (max 30 poin)
-        core_hits = sum(text_lower.count(ck) for ck in self.core_keywords)
+        core_hits  = sum(text_lower.count(ck) for ck in self.core_keywords)
         score += min(30, core_hits * 3)
-        # Bonus domain terpercaya (30 poin)
-        if self.get_source_type(url) == 'government':
-            score += 30
-        elif self.get_source_type(url) == 'academic':
-            score += 25
-        else:
-            score += 10
+        src = self.get_source_type(url)
+        score += 30 if src == 'government' else (25 if src == 'academic' else 10)
         return min(100, score)
 
+    # =========================================================================
+    # FILTER DOMAIN
+    # =========================================================================
+
+    def is_indonesian_domain(self, url):
+        domain = urlparse(url).netloc.lower()
+        if domain.endswith('.id'):
+            return True
+        return any(p.lower() in domain for p in self.priority_domains)
+
+    def is_blocked(self, url):
+        domain = urlparse(url).netloc.lower()
+        if any(x in domain for x in [
+            'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com'
+        ]):
+            return True
+        if any(b.lower() in domain for b in self.blocked_domains):
+            return True
+        return not self.is_indonesian_domain(url)
+
+    def is_priority(self, url):
+        domain = urlparse(url).netloc.lower()
+        return any(p.lower() in domain for p in self.priority_domains)
+
+    def is_relevant(self, text, url=""):
+        if len(text) <= 400:
+            return False
+        text_lower = text.lower()
+        has_core   = any(ck in text_lower for ck in self.core_keywords)
+        if not has_core:
+            return False
+        if url and self.is_priority(url):
+            return True
+        return any(cx in text_lower for cx in self.context_keywords)
+
+    # =========================================================================
+    # EKSTRAKSI KONTEN
+    # =========================================================================
+
     def _extract_pdf_text(self, response_content):
-        """Ekstrak teks dari bytes PDF menggunakan pdfplumber."""
         if not PDF_SUPPORT:
             return None
         try:
             with pdfplumber.open(io.BytesIO(response_content)) as pdf:
-                pages_text = []
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        pages_text.append(text.strip())
-            return " ".join(pages_text)
+                return " ".join(
+                    p.extract_text().strip()
+                    for p in pdf.pages
+                    if p.extract_text()
+                )
         except Exception as e:
             print(f"[!] PDF parse error: {e}")
             return None
 
-    def is_indonesian_domain(self, url):
-        """Pastikan domain berakhiran .id ATAU ada di daftar prioritas (misal: kompas.com)."""
-        domain = urlparse(url).netloc.lower()
-        # Izinkan domain Indonesia (.id TLD)
-        if domain.endswith('.id'):
-            return True
-        # Izinkan domain yang ada di daftar prioritas (walau bukan .id)
-        for priority in self.priority_domains:
-            if priority.lower() in domain:
-                return True
-        return False
-
-    def is_blocked(self, url):
-        domain = urlparse(url).netloc.lower()
-        # Blokir otomatis domain pencari bot dan sampah umum
-        if any(x in domain for x in ['google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com']):
-            return True
-        for blocked in self.blocked_domains:
-            if blocked.lower() in domain:
-                return True
-        # Blokir domain non-Indonesia yang tidak ada di daftar prioritas
-        if not self.is_indonesian_domain(url):
-            return True
-        return False
-
-    def is_priority(self, url):
-        domain = urlparse(url).netloc.lower()
-        for priority in self.priority_domains:
-            if priority.lower() in domain:
-                return True
-        return False
-
     def sanitize_filename(self, url):
-        clean_url = urlparse(url).netloc + urlparse(url).path
-        clean_url = clean_url.replace("/", "_").replace(":", "_").replace("?", "_").replace("&", "_")
-        return clean_url[:150] + ".json"
+        clean = urlparse(url).netloc + urlparse(url).path
+        clean = re.sub(r'[/:\?&]', '_', clean)
+        return clean[:150] + ".md"
 
-    def is_relevant(self, text, url=""):
-        """
-        Filter Relevansi Dua Tingkat:
-        - Domain prioritas (BPS, jurnal akademik, Kemensos): cukup ada keyword CORE
-        - Domain lain (.id biasa): wajib ada Core DAN Context
-        Min length: 400 karakter.
-        """
-        if len(text) <= 400:
-            return False
+    # =========================================================================
+    # SIMPAN KE MARKDOWN
+    # =========================================================================
 
-        text_lower = text.lower()
-        has_core = any(ck in text_lower for ck in self.core_keywords)
+    def _save_markdown(self, url, title, text_content, quality, source_type, is_priority_flag):
+        """Simpan konten ke file markdown dengan YAML frontmatter."""
+        # Bersihkan title untuk YAML (hindari karakter : yang merusak parsing YAML)
+        safe_title = title.replace(':', '-').replace('"', "'")
+        frontmatter = (
+            f"---\n"
+            f"url: {url}\n"
+            f"title: \"{safe_title}\"\n"
+            f"domain: {urlparse(url).netloc}\n"
+            f"crawl_date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"source_type: {source_type}\n"
+            f"quality_score: {quality}\n"
+            f"is_priority: {str(is_priority_flag).lower()}\n"
+            f"---\n\n"
+            f"# {title}\n\n"
+            f"{text_content}\n"
+        )
+        filename = self.sanitize_filename(url)
+        filepath = os.path.join(self.output_dir, filename)
+        with self._write_lock:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(frontmatter)
 
-        if not has_core:
-            return False
-
-        # Domain prioritas = trusted source, cukup Core saja
-        if url and self.is_priority(url):
-            return True
-
-        # Domain biasa = wajib ada Core + Context (lokasi/program)
-        has_context = any(cx in text_lower for cx in self.context_keywords)
-        return has_context
+    # =========================================================================
+    # EXTRACT CONTENT (dipanggil per thread)
+    # =========================================================================
 
     def extract_content(self, url):
-        # 1. Skip non-HTML files
-        if any(url.lower().endswith(ext) for ext in ['.pdf', '.doc', '.docx', '.zip', '.xlsx', '.ppt', '.pptx', '.jpg', '.png']):
-            print(f"[-] Skipped (File Type): {url}")
+        # 1. Skip tipe file non-text
+        if any(url.lower().endswith(ext) for ext in [
+            '.doc', '.docx', '.zip', '.xlsx', '.ppt', '.pptx', '.jpg', '.png', '.gif', '.mp4'
+        ]):
             if self.notifier: self.notifier.on_skipped("File Type", url)
             return None
 
-        # 2. Cek Duplikasi URL
-        if url in self.visited_urls: 
-            return None
-        
-        # 3. Cek Blocked Domain
+        # 2. Cek duplikasi URL (thread-safe)
+        with self._visited_lock:
+            if url in self.visited_urls:
+                return None
+
+        # 3. Cek blocked domain
         if self.is_blocked(url):
-            print(f"[-] Skipped (Blocked/Noise Domain): {url}")
             if self.notifier: self.notifier.on_skipped("Blocked Domain", url)
             return None
 
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
+            'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                               'AppleWebKit/537.36 (KHTML, like Gecko) '
+                               'Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
         }
-        
+
         try:
-            print(f"[*] Extracting: {url}")
+            print(f"[→] Fetching: {url}")
             response = requests.get(url, headers=headers, timeout=20, verify=False)
             response.raise_for_status()
-
             content_type = response.headers.get('Content-Type', '').lower()
 
-            # --- CABANG 1: PDF ---
-            if 'application/pdf' in content_type:
+            # ── Cabang PDF ─────────────────────────────────────────────────
+            if 'application/pdf' in content_type or url.lower().endswith('.pdf'):
                 if not PDF_SUPPORT:
-                    print(f"[-] Skipped (PDF - pdfplumber not installed): {url}")
                     if self.notifier: self.notifier.on_skipped("PDF no support", url)
                     return None
-                print(f"[*] Parsing PDF: {url}")
                 text_content = self._extract_pdf_text(response.content)
                 if not text_content:
-                    print(f"[-] Skipped (PDF empty/unreadable): {url}")
                     if self.notifier: self.notifier.on_skipped("PDF empty", url)
                     return None
                 title = url.split('/')[-1] or "PDF Document"
 
-            # --- CABANG 2: HTML ---
+            # ── Cabang HTML ────────────────────────────────────────────────
             elif 'text/html' in content_type:
                 response.encoding = response.apparent_encoding
-                soup = BeautifulSoup(response.text, 'html.parser')
-                title = soup.title.string if soup.title else "No Title"
-                for noise in soup(["script", "style", "nav", "footer", "header", "aside", "form", "button", "iframe"]):
+                soup  = BeautifulSoup(response.text, 'html.parser')
+                title = soup.title.string.strip() if soup.title else "No Title"
+                for noise in soup(["script", "style", "nav", "footer",
+                                   "header", "aside", "form", "button", "iframe"]):
                     noise.decompose()
                 content_tags = soup.find_all(['p', 'h1', 'h2', 'h3', 'article', 'section'])
-                text_content = " ".join([tag.get_text().strip() for tag in content_tags if tag.get_text().strip()])
-
-            # --- CABANG 3: Abaikan (bukan HTML/PDF) ---
+                text_content = " ".join(
+                    t.get_text().strip() for t in content_tags if t.get_text().strip()
+                )
             else:
-                print(f"[-] Skipped (Unsupported Content-Type: {content_type}): {url}")
                 if self.notifier: self.notifier.on_skipped("Content-Type", url)
                 return None
 
-            # 4. Validasi Konten (Stricter Filter)
+            # 4. Filter relevansi
             if not self.is_relevant(text_content, url):
-                print(f"[-] Skipped (Not Relevant/Poor Quality): {url}")
                 if self.notifier: self.notifier.on_skipped("Not Relevant", url)
                 return None
-            
-            # 5. Cek Duplikasi Isi (Content Hashing)
+
+            # 5. Cek duplikasi konten (thread-safe)
             content_hash = self._get_hash(text_content)
-            if content_hash in self.content_hashes:
-                print(f"[-] Skipped (Duplicate Content): {url}")
-                if self.notifier: self.notifier.on_skipped("Duplicate", url)
-                return None
+            with self._hash_lock:
+                if content_hash in self.content_hashes:
+                    if self.notifier: self.notifier.on_skipped("Duplicate", url)
+                    return None
+                self.content_hashes.add(content_hash)
 
-            # 6. Simpan dalam JSON
-            quality = self.get_quality_score(text_content, url)
-            data = {
-                "metadata": {
-                    "url": url,
-                    "title": title.strip(),
-                    "domain": urlparse(url).netloc,
-                    "crawl_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "source_type": self.get_source_type(url),   # government / academic / news
-                    "quality_score": quality,                    # 0-100
-                    "is_priority": self.is_priority(url)
-                },
-                "content": text_content
-            }
+            # 6. Tandai visited (thread-safe)
+            with self._visited_lock:
+                self.visited_urls.add(url)
+            self._save_visited(url)
 
-            filename = self.sanitize_filename(url)
-            with open(os.path.join(self.output_dir, filename), 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            
-            self.visited_urls.add(url)
-            self._save_visited(url)   # Simpan ke file agar persistent
-            self.content_hashes.add(content_hash)
-            print(f"[+] Saved: {title.strip()[:60]}...")
-            if self.notifier: self.notifier.on_saved(title.strip(), url, quality)
-            return soup
+            # 7. Simpan sebagai Markdown
+            quality     = self.get_quality_score(text_content, url)
+            source_type = self.get_source_type(url)
+            prio        = self.is_priority(url)
+            self._save_markdown(url, title, text_content, quality, source_type, prio)
 
+            print(f"[✓] Saved (q={quality}): {title[:60]}")
+            if self.notifier: self.notifier.on_saved(title, url, quality)
+            return True
+
+        except requests.exceptions.Timeout:
+            print(f"[!] Timeout: {url}")
+            if self.notifier: self.notifier.on_error(url, "Timeout")
         except Exception as e:
             print(f"[!] Error {url}: {e}")
             if self.notifier: self.notifier.on_error(url, str(e))
-            return None
+        return None
+
+    # =========================================================================
+    # SEARCH DUCKDUCKGO  (sequential — satu query dalam satu waktu)
+    # =========================================================================
 
     def search_duckduckgo(self, query):
-        """Mencari link dengan region Indonesia dan safesearch off."""
-        print(f"[*] Searching DuckDuckGo: {query}")
+        print(f"[🔍] Searching: {query}")
         try:
-            results = []
-            with DDGS() as ddgs:
-                # region="id-id" untuk hasil Indonesia, safesearch="off" untuk hasil lebih luas
-                for r in ddgs.text(query, region="id-id", safesearch="off", max_results=15):
-                    results.append(r['href'])
-            
-            print(f"[*] Found {len(results)} results.")
+            with self._ddg_lock:   # satu search dalam satu waktu
+                results = []
+                with DDGS() as ddgs:
+                    for r in ddgs.text(query, region="id-id", safesearch="off", max_results=15):
+                        results.append(r['href'])
+            print(f"    → {len(results)} URL ditemukan")
             return results
         except Exception as e:
             print(f"[!] Search Error: {e}")
             return []
 
+    # =========================================================================
+    # RUN LOOP UTAMA  (search sequensial + crawl paralel)
+    # =========================================================================
+
+    def run(self, stop_fn=None):
+        """
+        Arsitektur:
+        - Keyword search     : sequential (DuckDuckGo rate-limit)
+        - URL crawling       : parallel (ThreadPoolExecutor, NUM_CRAWL_WORKERS)
+        """
+        import random
+        cycle = 0
+
+        with ThreadPoolExecutor(max_workers=NUM_CRAWL_WORKERS, thread_name_prefix="crawl") as executor:
+            while True:
+                if stop_fn and stop_fn():
+                    break
+
+                cycle += 1
+                keywords = self.search_keywords.copy()
+                random.shuffle(keywords)
+                print(f"\n[*] === SIKLUS KE-{cycle} ({len(keywords)} kata kunci) ===")
+                if self.notifier:
+                    self.notifier.send(
+                        f"🔄 Siklus ke-{cycle} dimulai "
+                        f"({len(keywords)} kata kunci, {NUM_CRAWL_WORKERS} crawl workers)"
+                    )
+
+                for q in keywords:
+                    if stop_fn and stop_fn():
+                        break
+
+                    urls = self.search_duckduckgo(q)
+                    if not urls:
+                        time.sleep(SEARCH_DELAY)
+                        continue
+
+                    # Submit semua URL ke thread pool
+                    futures = {executor.submit(self.extract_content, url): url for url in urls}
+                    # CATATAN: tidak pakai timeout di as_completed karena
+                    # tiap request sudah punya timeout=20s di dalam extract_content.
+                    # Kalau pakai timeout di sini, TimeoutError bisa crash loop utama.
+                    try:
+                        for future in as_completed(futures):
+                            try:
+                                future.result()
+                            except Exception as e:
+                                print(f"[!] Worker exception: {e}")
+                    except Exception as e:
+                        print(f"[!] Unexpected error saat crawl batch: {e}")
+
+                    # Jeda antar keyword agar DuckDuckGo tidak ban
+                    if not (stop_fn and stop_fn()):
+                        time.sleep(SEARCH_DELAY)
+
+                if stop_fn and stop_fn():
+                    break
+
+                print(f"[*] Siklus {cycle} selesai. Jeda 2 menit ...")
+                if self.notifier:
+                    self.notifier.send(f"⏳ Siklus {cycle} selesai. Jeda 2 menit ...")
+
+                for _ in range(120):
+                    if stop_fn and stop_fn():
+                        break
+                    time.sleep(1)
+
+        print(f"\n[✓] Crawler berhenti. Total siklus: {cycle}.")
+        if self.notifier:
+            self.notifier.on_finish()
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
 if __name__ == "__main__":
-    import urllib3
-    import random
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    import signal
+    import traceback
 
-    # ── SETUP BOT TELEGRAM ──────────────────────────────────────
-    BOT_TOKEN = "8780918428:AAErUJSKU-dYHS4VSLNgg5y6LJW1fv5g6o4"
-    BOT_CHAT_ID = 1303803107
+    notifier = TelegramNotifier(token=config.BOT_TOKEN, chat_id=config.BOT_CHAT_ID)
 
-    notifier = TelegramNotifier(token=BOT_TOKEN, chat_id=BOT_CHAT_ID)
-    notifier.start_polling()   # Aktifkan /status dan /stop dari HP
-    # ────────────────────────────────────────────────────────────
+    # TIDAK memanggil notifier.start_polling() — bot_runner.py yang handle /stop
+    # via terminate() → SIGTERM → _stop_event.set()
+
+    _stop_event = threading.Event()
+
+    def _handle_sigterm(signum, frame):
+        print("[!] SIGTERM diterima — menghentikan crawler graceful...")
+        _stop_event.set()
+
+    signal.signal(signal.SIGTERM, _handle_sigterm)
 
     crawler = WebCrawlerAI(notifier=notifier)
 
     if not crawler.search_keywords:
-        print("[!] keyword.txt kosong! Silakan isi kata kunci.")
+        print("[!] keyword.txt kosong!")
     else:
         notifier.on_start(len(crawler.search_keywords))
-        cycle = 0
-
-        # ── LOOP TERUS MENERUS sampai /stop dari Telegram atau Ctrl+C ──
         try:
-            while not notifier.is_stop_requested():
-                cycle += 1
-                keywords = crawler.search_keywords.copy()
-                random.shuffle(keywords)  # Acak urutan tiap siklus biar hasilnya beda
-                print(f"\n[*] ===== SIKLUS KE-{cycle} ({len(keywords)} kata kunci) =====")
-                notifier.send(f"\U0001f501 Siklus ke-{cycle} dimulai ({len(keywords)} kata kunci, dikocok ulang)")
-
-                for q in keywords:
-                    if notifier.is_stop_requested():
-                        break
-
-                    links = crawler.search_duckduckgo(q)
-                    if not links:
-                        print(f"[!] No links found for: {q}")
-                    else:
-                        for link in links:
-                            if notifier.is_stop_requested():
-                                break
-                            crawler.extract_content(link)
-                            time.sleep(2)
-
-                    print("[*] Cooling down 5s before next keyword...")
-                    time.sleep(5)
-
-                print(f"[*] Siklus {cycle} selesai. Jeda 2 menit sebelum siklus berikutnya...")
-                notifier.send(f"\u23f3 Siklus {cycle} selesai. Jeda 2 menit lalu lanjut siklus {cycle+1}...")
-                # Jeda antar siklus agar DuckDuckGo tidak ban
-                for _ in range(120):
-                    if notifier.is_stop_requested():
-                        break
-                    time.sleep(1)
-
+            crawler.run(stop_fn=_stop_event.is_set)
         except KeyboardInterrupt:
             print("\n[!] Dihentikan manual (Ctrl+C).")
-
-        notifier.on_finish()
-        print(f"\n[!] Crawler berhenti. Total siklus selesai: {cycle}. Data ada di '{crawler.output_dir}'.")
+        except BaseException as e:
+            # Tangkap SEMUA exception (termasuk RuntimeError, SystemExit, dll)
+            # dan kirim ke Telegram supaya kita tahu penyebab sebenarnya
+            tb = traceback.format_exc()
+            err_msg = (
+                f"❌ <b>Crawler crash!</b>\n"
+                f"<code>{type(e).__name__}: {str(e)[:200]}</code>\n\n"
+                f"<pre>{tb[-1000:]}</pre>"
+            )
+            print(f"[!!!] CRASH: {tb}")
+            notifier.send(err_msg)
+        finally:
+            notifier.on_finish()
+            print(f"[OK] Data tersimpan di '{crawler.output_dir}'")

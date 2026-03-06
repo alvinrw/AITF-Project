@@ -1,0 +1,18 @@
+# File & folder yang tidak perlu di-commit ke Git
+
+# Credentials & konfigurasi sensitif
+config.py
+*.json
+
+# Data crawler (bisa sangat besar)
+data_raw/
+visited_urls.txt
+
+# Log
+crawl.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.env

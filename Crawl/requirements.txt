@@ -1,5 +1,13 @@
+# ── Crawler core ─────────────────────────────────────────────────────────────
 requests
 beautifulsoup4
 urllib3
 duckduckgo-search
 pdfplumber
+
+# ── Google Drive upload ───────────────────────────────────────────────────────
+google-api-python-client
+google-auth
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
