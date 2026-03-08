@@ -3,10 +3,10 @@ bot_runner.py — Bot daemon yang jalan mandiri di server.
 Jalankan: python bot_runner.py
 
 Perintah dari Telegram:
-  /run    → Mulai crawler (main.py)
-  /stop   → Hentikan crawler
-  /status → Lihat progress + info upload
-  /log    → Lihat 20 baris terakhir log
+  /run    → Mulai crawler (N instans paralel)
+  /stop   → Hentikan semua instans crawler
+  /status → Lihat progress gabungan + info upload
+  /log    → Lihat log gabungan dari semua instans
   /upload → Upload data_raw ke Drive sekarang (tanpa tunggu jadwal)
 """
 
@@ -24,16 +24,18 @@ _upload_available = None
 BOT_TOKEN   = config.BOT_TOKEN
 CHAT_ID     = config.BOT_CHAT_ID
 BASE_URL    = f"https://api.telegram.org/bot{BOT_TOKEN}"
-LOG_FILE    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crawl.log")
-MAIN_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main.py")
-DATA_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_raw")
+SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE    = os.path.join(SCRIPT_DIR, "crawl_{}.log")  # format string per instans
+MAIN_SCRIPT = os.path.join(SCRIPT_DIR, "main.py")
+DATA_DIR    = os.path.join(SCRIPT_DIR, "data_raw")
+NUM_INSTANCES = config.NUM_INSTANCES
 
 UPLOAD_INTERVAL_HOURS = config.UPLOAD_INTERVAL_HOURS
 
 
 # ─── Crawler State ───────────────────────────────────────────────────────────
 
-crawler_proc  = None
+crawler_procs  = []  # list of (instance_id, subprocess.Popen)
 last_update_id = 0
 proc_lock     = threading.Lock()
 
@@ -95,12 +97,19 @@ def skip_stale_updates():
 # LOG READER
 # =============================================================================
 
-def read_last_log(lines=20):
-    if not os.path.exists(LOG_FILE):
-        return "(log belum ada)"
-    with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
-        all_lines = f.readlines()
-    return "".join(all_lines[-lines:]).strip()[-3000:] or "(log kosong)"
+def read_last_log(lines=15):
+    """Baca log dari semua instans crawler dan gabungkan."""
+    combined = []
+    for idx in range(1, NUM_INSTANCES + 1):
+        log_path = LOG_FILE.format(idx)
+        if not os.path.exists(log_path):
+            continue
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            all_lines = f.readlines()
+        excerpt = "".join(all_lines[-lines:]).strip()
+        if excerpt:
+            combined.append(f"--- Instans #{idx} ---\n{excerpt}")
+    return "\n\n".join(combined)[-3000:] if combined else "(log belum ada)"
 
 
 # =============================================================================
@@ -108,12 +117,20 @@ def read_last_log(lines=20):
 # =============================================================================
 
 def build_status():
-    global crawler_proc, _last_upload_time, _next_upload_time, _is_uploading
+    global crawler_procs, _last_upload_time, _next_upload_time, _is_uploading
 
     with proc_lock:
-        running = crawler_proc is not None and crawler_proc.poll() is None
+        active = [(i, p) for i, p in crawler_procs if p.poll() is None]
 
-    state = "🟢 BERJALAN" if running else "🔴 BERHENTI"
+    n_active = len(active)
+    if n_active == 0:
+        state = "🔴 BERHENTI"
+    elif n_active < NUM_INSTANCES:
+        state = f"🟡 SEBAGIAN ({n_active}/{NUM_INSTANCES} berjalan)"
+    else:
+        state = f"🟢 BERJALAN ({n_active}/{NUM_INSTANCES} instans)"
+
+    pid_list = ", ".join(str(p.pid) for _, p in active) if active else "-"
 
     # Hitung dokumen tersimpan (.md dan .json)
     saved = 0
@@ -122,7 +139,7 @@ def build_status():
                      if f.endswith(".md") or f.endswith(".json")])
 
     # Hitung visited URLs
-    visited_file = os.path.join(os.path.dirname(__file__), "visited_urls.txt")
+    visited_file = os.path.join(SCRIPT_DIR, "visited_urls.txt")
     visited = 0
     if os.path.exists(visited_file):
         with open(visited_file, "r") as vf:
@@ -136,6 +153,7 @@ def build_status():
     return (
         f"📊 <b>Status Crawler</b>\n"
         f"Status     : {state}\n"
+        f"PID        : {pid_list}\n"
         f"✅ Dokumen  : {saved} file tersimpan\n"
         f"🔗 Visited  : {visited} URL sudah dikunjungi\n"
         f"🕐 Waktu    : {datetime.now().strftime('%d %b %Y %H:%M:%S')}\n"
@@ -211,45 +229,70 @@ def upload_scheduler():
 # =============================================================================
 
 def start_crawler():
-    global crawler_proc
+    """Spawn NUM_INSTANCES subprocess main.py dengan delay berbeda untuk hindari DDG rate-limit."""
+    global crawler_procs
+    # Delay antar instans agar tidak bersamaan nge-hit DDG
+    DELAYS = [0, 20, 45, 75, 120]  # detik (cukup untuk 5 instans)
     with proc_lock:
-        if crawler_proc and crawler_proc.poll() is None:
-            return False, "Crawler sudah berjalan!"
-        log_f = open(LOG_FILE, "a", encoding="utf-8")
-        crawler_proc = subprocess.Popen(
-            ["python", "-u", MAIN_SCRIPT],
-            stdout=log_f,
-            stderr=log_f,
-            cwd=os.path.dirname(__file__),
-        )
-    return True, f"Crawler dimulai (PID: {crawler_proc.pid})"
+        # Cek apakah sudah ada yang jalan
+        still_running = [(i, p) for i, p in crawler_procs if p.poll() is None]
+        if still_running:
+            return False, f"{len(still_running)} instans crawler sudah berjalan!"
+
+        crawler_procs = []
+        pids = []
+        for idx in range(1, NUM_INSTANCES + 1):
+            delay = DELAYS[idx - 1] if idx - 1 < len(DELAYS) else (idx - 1) * 25
+            log_path = LOG_FILE.format(idx)
+            log_f = open(log_path, "a", encoding="utf-8")
+            env = os.environ.copy()
+            env["CRAWLER_INSTANCE_ID"] = str(idx)
+            env["CRAWLER_INSTANCE_DELAY"] = str(delay)
+            proc = subprocess.Popen(
+                ["python", "-u", MAIN_SCRIPT],
+                stdout=log_f,
+                stderr=log_f,
+                cwd=SCRIPT_DIR,
+                env=env,
+            )
+            crawler_procs.append((idx, proc))
+            pids.append(f"#{idx}=PID:{proc.pid}")
+
+    return True, f"Sukses! {NUM_INSTANCES} instans dimulai: {', '.join(pids)}"
 
 
 def stop_crawler():
-    global crawler_proc
+    """Hentikan semua subprocess crawler yang sedang berjalan."""
+    global crawler_procs
     with proc_lock:
-        if crawler_proc is None or crawler_proc.poll() is not None:
-            return False, "Crawler tidak sedang berjalan."
-        crawler_proc.terminate()
-        try:
-            crawler_proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            crawler_proc.kill()
-    return True, "Crawler dihentikan."
+        running = [(i, p) for i, p in crawler_procs if p.poll() is None]
+        if not running:
+            return False, "Tidak ada instans crawler yang sedang berjalan."
+        for i, p in running:
+            p.terminate()
+        for i, p in running:
+            try:
+                p.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+        crawler_procs = []
+    return True, f"{len(running)} instans crawler dihentikan."
 
 
 def monitor_crawler():
-    global crawler_proc
+    global crawler_procs
     while True:
         time.sleep(30)
         with proc_lock:
-            if crawler_proc and crawler_proc.poll() is not None:
-                code = crawler_proc.returncode
-                send(
-                    f"⚠️ Crawler berhenti tidak terduga (exit code {code}).\n"
-                    f"Kirim /run untuk mulai ulang."
-                )
-                crawler_proc = None
+            dead = [(i, p) for i, p in crawler_procs if p.poll() is not None]
+        if dead:
+            codes = ", ".join(f"#{i}(exit:{p.returncode})" for i, p in dead)
+            send(
+                f"⚠️ {len(dead)} instans crawler berhenti tidak terduga: {codes}.\n"
+                f"Kirim /run untuk mulai ulang."
+            )
+            with proc_lock:
+                crawler_procs = [(i, p) for i, p in crawler_procs if p.poll() is None]
 
 
 # =============================================================================

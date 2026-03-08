@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from duckduckgo_search import DDGS
+from filelock import FileLock
 from bot_monitor import TelegramNotifier
 import config
 
@@ -49,6 +50,7 @@ class WebCrawlerAI:
         keyword_file="keyword.txt",
         notifier=None,
         visited_file="visited_urls.txt",
+        instance_id=1,
     ):
         # Resolve semua path relatif ke direktori script (bukan cwd)
         def _abspath(p):
@@ -57,15 +59,20 @@ class WebCrawlerAI:
         self.output_dir   = _abspath(output_dir)
         self.visited_file = _abspath(visited_file)
         self.notifier     = notifier
+        self.instance_id  = instance_id
+        # Lock file di-simpan di-samping visited_urls.txt (nama: visited_urls.txt.lock)
+        self._file_lock   = FileLock(self.visited_file + ".lock", timeout=10)
         blocked_file  = _abspath(blocked_file)
         priority_file = _abspath(priority_file)
         keyword_file  = _abspath(keyword_file)
 
-        # ── Shared state (thread-safe) ───────────────────────────────────────
-        self._visited_lock = threading.Lock()
+        # ── Shared state (thread-safe) ─────────────────────────────────────
         self._hash_lock    = threading.Lock()
         self._write_lock   = threading.Lock()
         self._ddg_lock     = threading.Lock()   # satu search DuckDuckGo dalam satu waktu
+        # _visited_lock hanya dipakai untuk in-memory set di proses ini.
+        # Penulisan ke disk memakai FileLock (aman lintas proses).
+        self._visited_lock = threading.Lock()
 
         self.visited_urls  = self._load_visited()
         self.content_hashes = set()
@@ -111,17 +118,28 @@ class WebCrawlerAI:
         return []
 
     def _load_visited(self):
-        if os.path.exists(self.visited_file):
-            with open(self.visited_file, 'r', encoding='utf-8') as f:
-                urls = {l.strip() for l in f if l.strip()}
-            print(f"[*] Loaded {len(urls):,} visited URLs dari {self.visited_file}")
-            return urls
+        """Baca visited_urls.txt pakai FileLocker agar aman saat multi-instans startup bersamaan."""
+        try:
+            with self._file_lock:
+                if os.path.exists(self.visited_file):
+                    with open(self.visited_file, 'r', encoding='utf-8') as f:
+                        urls = {l.strip() for l in f if l.strip()}
+                    print(f"[Instans-{self.instance_id}] Loaded {len(urls):,} visited URLs")
+                    return urls
+        except Exception as e:
+            print(f"[Instans-{self.instance_id}] Gagal load visited: {e}")
         return set()
 
     def _save_visited(self, url):
-        with self._write_lock:
-            with open(self.visited_file, 'a', encoding='utf-8') as f:
-                f.write(url + '\n')
+        """Simpan URL ke disk menggunakan FileLock (aman lintas proses)."""
+        with self._visited_lock:          # in-process lock (cepat)
+            self.visited_urls.add(url)   # update in-memory set
+        try:
+            with self._file_lock:        # OS-level inter-process lock
+                with open(self.visited_file, 'a', encoding='utf-8') as f:
+                    f.write(url + '\n')
+        except Exception as e:
+            print(f"[Instans-{self.instance_id}] Gagal simpan visited: {e}")
 
     def _get_hash(self, text):
         return hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -429,40 +447,47 @@ if __name__ == "__main__":
     import signal
     import traceback
 
-    notifier = TelegramNotifier(token=config.BOT_TOKEN, chat_id=config.BOT_CHAT_ID)
+    # Baca instance ID dan delay dari environment variable (diset oleh bot_runner.py)
+    instance_id    = int(os.environ.get("CRAWLER_INSTANCE_ID", "1"))
+    instance_delay = int(os.environ.get("CRAWLER_INSTANCE_DELAY", "0"))
 
-    # TIDAK memanggil notifier.start_polling() — bot_runner.py yang handle /stop
-    # via terminate() → SIGTERM → _stop_event.set()
+    notifier = TelegramNotifier(token=config.BOT_TOKEN, chat_id=config.BOT_CHAT_ID)
 
     _stop_event = threading.Event()
 
     def _handle_sigterm(signum, frame):
-        print("[!] SIGTERM diterima — menghentikan crawler graceful...")
+        print(f"[Instans-{instance_id}] SIGTERM diterima — menghentikan crawler graceful...")
         _stop_event.set()
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
 
-    crawler = WebCrawlerAI(notifier=notifier)
+    # Delay antar-instans agar tidak serempak hit DuckDuckGo (diset oleh bot_runner)
+    if instance_delay > 0:
+        print(f"[Instans-{instance_id}] Menunggu {instance_delay}s sebelum mulai (anti DDG rate-limit)...")
+        for _ in range(instance_delay):
+            if _stop_event.is_set():
+                break
+            time.sleep(1)
+
+    crawler = WebCrawlerAI(notifier=notifier, instance_id=instance_id)
 
     if not crawler.search_keywords:
-        print("[!] keyword.txt kosong!")
+        print(f"[Instans-{instance_id}] keyword.txt kosong!")
     else:
         notifier.on_start(len(crawler.search_keywords))
         try:
             crawler.run(stop_fn=_stop_event.is_set)
         except KeyboardInterrupt:
-            print("\n[!] Dihentikan manual (Ctrl+C).")
+            print(f"\n[Instans-{instance_id}] Dihentikan manual (Ctrl+C).")
         except BaseException as e:
-            # Tangkap SEMUA exception (termasuk RuntimeError, SystemExit, dll)
-            # dan kirim ke Telegram supaya kita tahu penyebab sebenarnya
             tb = traceback.format_exc()
             err_msg = (
-                f"❌ <b>Crawler crash!</b>\n"
+                f"❌ <b>Crawler Instans-{instance_id} crash!</b>\n"
                 f"<code>{type(e).__name__}: {str(e)[:200]}</code>\n\n"
                 f"<pre>{tb[-1000:]}</pre>"
             )
-            print(f"[!!!] CRASH: {tb}")
+            print(f"[Instans-{instance_id}] CRASH: {tb}")
             notifier.send(err_msg)
         finally:
             notifier.on_finish()
-            print(f"[OK] Data tersimpan di '{crawler.output_dir}'")
+            print(f"[Instans-{instance_id}] Selesai. Data tersimpan di '{crawler.output_dir}'")
