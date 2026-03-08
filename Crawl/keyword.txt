@@ -198,3 +198,71 @@ machine learning prediksi kemiskinan rumah tangga indonesia
 studi efektivitas BLT pengurangan kemiskinan pedesaan jawa timur
 analisis faktor penentu kemiskinan rumah tangga jawa timur
 model klasifikasi kelayakan penerima bantuan sosial
+
+# ===== DEMOGRAFI & PROFIL WILAYAH JAWA TIMUR =====
+profil demografi jawa timur jumlah penduduk per kabupaten kota
+kepadatan penduduk per kecamatan jawa timur BPS
+komposisi penduduk berdasarkan usia jawa timur
+pertumbuhan penduduk jawa timur per tahun
+urbanisasi dan migrasi penduduk jawa timur
+persebaran penduduk jawa timur wilayah timur barat
+sensus penduduk jawa timur 2020 2024 data kecamatan
+rasio ketergantungan penduduk jawa timur per wilayah
+penduduk usia produktif jawa timur per kabupaten
+
+# ===== PROFIL KECAMATAN & KELURAHAN JAWA TIMUR =====
+daftar kecamatan kabupaten malang jawa timur
+daftar kelurahan kota malang jawa timur beserta luas
+profil kecamatan di kabupaten jember jawa timur
+jumlah desa kelurahan per kecamatan jawa timur
+kecamatan paling padat penduduk di jawa timur
+kondisi sosial ekonomi per kecamatan kabupaten sampang madura
+data kecamatan termiskin jawa timur BPS 2024
+kecamatan terpencil perbatasan jawa timur
+pemetaan kecamatan dengan tingkat kemiskinan tinggi jawa timur
+profil kecamatan di tapal kuda jawa timur
+
+# ===== PEKERJAAN & MATA PENCAHARIAN MAYORITAS PER WILAYAH =====
+pekerjaan mayoritas penduduk kabupaten malang jawa timur
+mata pencaharian utama penduduk madura bangkalan sampang
+profil pekerjaan petani tebu kabupaten pasuruan jawa timur
+pekerjaan mayoritas penduduk lamongan nelayan pertanian
+pekerjaan warga pesisir pantai utara jawa timur tuban gresik
+profil pekerjaan buruh pabrik kawasan industri pasuruan sidoarjo
+mata pencaharian penduduk pegunungan kabupaten lumajang malang
+pekerjaan mayoritas penduduk bojonegoro pertambangan minyak
+mata pencaharian petani tembakau jember bondowoso situbondo
+profil pekerjaan penduduk banyuwangi pertanian pariwisata
+
+# ===== KOTA MALANG & SEKITARNYA (FOKUS KHUSUS) =====
+profil kecamatan di kota malang dan mayoritas pekerjaannya
+mata pencaharian penduduk kecamatan blimbing malang
+profil sosial ekonomi kecamatan sukun kota malang
+pekerjaan warga kecamatan lowokwaru malang pedagang buruh
+kondisi ekonomi kecamatan kedungkandang kota malang
+profil penduduk kecamatan klojen pusat kota malang
+pekerjaan mayoritas penduduk kota malang sektor informal
+pedagang kaki lima sektor informal kota malang kemiskinan
+buruh industri makanan minuman kota malang UMK
+pengusaha kecil UMKM kota malang profil ekonomi
+data BPS kemiskinan per kecamatan kota malang 2023 2024
+kawasan kumuh kota malang kelurahan kemiskinan perkotaan
+profil sosial ekonomi kabupaten malang vs kota malang
+kemiskinan mahasiswa kontrakan kota malang sektor jasa
+pedagang pasar tradisional kota malang profil pekerjaan
+profil kemiskinan kelurahan di kota malang data 2024
+pekerja harian lepas kota malang kondisi ekonomi
+profil pekerjaan pendatang urbanisasi kota malang
+angka pengangguran kota malang kecamatan tingkat
+
+# ===== EKONOMI LOKAL & SEKTOR UNGGULAN JAWA TIMUR =====
+sektor pertanian unggulan per kabupaten jawa timur
+komoditas ekspor unggulan jawa timur 2024
+PDRB per kapita kabupaten kota jawa timur 2023 2024
+industri pengolahan penyerap tenaga kerja jawa timur
+ekonomi nelayan pesisir jawa timur kondisi kesejahteraan
+petani bawang merah nganjuk kemiskinan dan pendapatan
+petani tebu jawa timur rendemen harga dan kesejahteraan
+peternak sapi perah jawa timur kesejahteraan ekonomi
+pengrajin UMKM sentra kerajinan jawa timur pendapatan
+ekonomi pariwisata banyuwangi jember dampak kemiskinan
