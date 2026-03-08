@@ -113,6 +113,28 @@ def read_last_log(lines=15):
 
 
 # =============================================================================
+# TOKEN ESTIMATOR
+# =============================================================================
+
+def estimate_tokens():
+    """Estimasi cepat jumlah token dari semua file di data_raw/.
+    Metode: total bytes / 3.7  (rata-rata empiris teks Indonesia dengan tokenizer Qwen2.5)
+    Sangat cepat karena hanya baca metadata file, tidak baca isi konten.
+    """
+    if not os.path.exists(DATA_DIR):
+        return 0
+    total_bytes = 0
+    for fname in os.listdir(DATA_DIR):
+        if fname.endswith(".md") or fname.endswith(".json"):
+            try:
+                total_bytes += os.path.getsize(os.path.join(DATA_DIR, fname))
+            except OSError:
+                pass
+    # Qwen2.5 tokenizer: ~3.7 byte per token untuk teks Indonesia UTF-8
+    return int(total_bytes / 3.7)
+
+
+# =============================================================================
 # STATUS BUILDER
 # =============================================================================
 
@@ -150,12 +172,22 @@ def build_status():
     next_up = _next_upload_time.strftime("%d %b %Y %H:%M") if _next_upload_time else "-"
     up_status = "⏳ Sedang upload…" if _is_uploading else f"⏰ Berikutnya: {next_up}"
 
+    # Estimasi token (cepat, berbasis ukuran file)
+    token_est = estimate_tokens()
+    if token_est >= 1_000_000:
+        token_str = f"~{token_est / 1_000_000:.2f}M token"
+    elif token_est >= 1_000:
+        token_str = f"~{token_est / 1_000:.1f}K token"
+    else:
+        token_str = f"{token_est} token"
+
     return (
         f"📊 <b>Status Crawler</b>\n"
         f"Status     : {state}\n"
         f"PID        : {pid_list}\n"
         f"✅ Dokumen  : {saved} file tersimpan\n"
         f"🔗 Visited  : {visited} URL sudah dikunjungi\n"
+        f"🪙 Estimasi : {token_str} (Qwen2.5)\n"
         f"🕐 Waktu    : {datetime.now().strftime('%d %b %Y %H:%M:%S')}\n"
         f"\n"
         f"☁️ <b>Upload Drive</b>\n"
@@ -338,6 +370,28 @@ def handle_command(text):
 
 
 # =============================================================================
+# PERIODIC REPORTER (laporan gabungan 1x, bukan per-instans)
+# =============================================================================
+
+PERIODIC_REPORT_MINUTES = 30  # Kirim laporan gabungan setiap N menit
+
+def periodic_reporter():
+    """Kirim 1 laporan gabungan semua instans setiap PERIODIC_REPORT_MINUTES menit.
+    Menggantikan notif per-instans yang spammy dari bot_monitor.py.
+    """
+    time.sleep(PERIODIC_REPORT_MINUTES * 60)  # Tunggu sebelum laporan pertama
+    while True:
+        with proc_lock:
+            active = [(i, p) for i, p in crawler_procs if p.poll() is None]
+        if active:  # Hanya kirim kalau ada yang jalan
+            send(
+                f"⏱ <b>Laporan Berkala ({PERIODIC_REPORT_MINUTES} menit)</b>\n\n"
+                + build_status()
+            )
+        time.sleep(PERIODIC_REPORT_MINUTES * 60)
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -345,8 +399,9 @@ def main():
     global last_update_id
 
     # Background threads
-    threading.Thread(target=monitor_crawler,  daemon=True).start()
-    threading.Thread(target=upload_scheduler, daemon=True).start()
+    threading.Thread(target=monitor_crawler,   daemon=True).start()
+    threading.Thread(target=upload_scheduler,  daemon=True).start()
+    threading.Thread(target=periodic_reporter, daemon=True).start()  # Laporan gabungan tiap 30 menit
 
     # ── Skip perintah lama SEBELUM mulai polling ─────────────────────────────
     # Tanpa ini, /stop atau /run dari sesi kemarin akan langsung dieksekusi

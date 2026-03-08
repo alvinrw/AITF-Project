@@ -25,9 +25,10 @@ class TelegramNotifier:
             "start_time": None,
             "last_url": "-",
         }
-        # Laporan berkala: setiap N dokumen ATAU setiap M menit
-        self.report_every = 3          # setiap 3 dokumen tersimpan
-        self.report_every_minutes = 5  # setiap 5 menit
+        # Laporan berkala: dinonaktifkan trigger per-dokumen, hanya per waktu
+        # (Agar tidak spam saat multi-instans — status gabungan ada di /status bot runner)
+        self.report_every = None         # None = nonaktif (tidak trigger per dokumen)
+        self.report_every_minutes = 60   # Kirim ringkasan tiap 60 menit per instans
         self._last_report_time = time.time()
 
 
@@ -52,17 +53,9 @@ class TelegramNotifier:
     # ─────────────────────── KIRIM PESAN ────────────────────────
 
     def send(self, message):
-        """Kirim pesan ke Telegram. Gagal tidak crash program."""
-        if not self.chat_id:
-            return
-        try:
-            requests.post(
-                f"{self.base_url}/sendMessage",
-                json={"chat_id": self.chat_id, "text": message, "parse_mode": "HTML"},
-                timeout=10
-            )
-        except Exception as e:
-            print(f"[BOT] Gagal kirim pesan: {e}")
+        """Notif per-instans DIMATIKAN — laporan gabungan dikirim oleh bot_runner.py."""
+        pass  # Sengaja dikosongkan
+
 
     def send_status(self):
         """Kirim ringkasan status sekarang."""
@@ -98,9 +91,10 @@ class TelegramNotifier:
     def on_saved(self, title, url, quality_score):
         self._stats["saved"] += 1
         self._stats["last_url"] = url
-        # Laporan berkala: setiap N dokumen ATAU setiap M menit
+        # Laporan berkala: hanya berdasarkan waktu (bukan per-dokumen)
+        # Dengan multi-instans, trigger per-dokumen terlalu spammy
         minutes_passed = (time.time() - self._last_report_time) / 60
-        if self._stats["saved"] % self.report_every == 0 or minutes_passed >= self.report_every_minutes:
+        if minutes_passed >= self.report_every_minutes:
             self.send_status()
             self._last_report_time = time.time()
 
