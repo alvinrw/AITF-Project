@@ -8,7 +8,7 @@ import time
 import hashlib
 import threading
 import urllib3
-from bs4 import BeautifulSoup
+from selectolax.parser import HTMLParser
 from urllib.parse import urlparse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -36,6 +36,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 NUM_CRAWL_WORKERS  = config.NUM_CRAWL_WORKERS
 SEARCH_DELAY       = config.SEARCH_DELAY
 REQUEST_DELAY      = 1.0  # detik antar request per thread (dalam lock)
+
+# Cloudflare Config
+CF_ACCOUNT_ID = getattr(config, 'CLOUDFLARE_ACCOUNT_ID', None)
+CF_API_TOKEN  = getattr(config, 'CLOUDFLARE_API_TOKEN', None)
 
 # Direktori tempat main.py berada — semua path file dicari relatif ke sini
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -252,6 +256,37 @@ class WebCrawlerAI:
                 f.write(frontmatter)
 
     # =========================================================================
+    # CLOUDFLARE CRAWL INTEGRATION
+    # =========================================================================
+
+    def _fetch_via_cloudflare(self, url):
+        """Panggil API Cloudflare Browser Rendering Crawl."""
+        if not CF_ACCOUNT_ID or not CF_API_TOKEN:
+            return None, None, False
+
+        api_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/browser-rendering/crawl"
+        headers = {
+            "Authorization": f"Bearer {CF_API_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        payload = {"url": url}
+
+        try:
+            print(f"[☁️] Cloudflare Fetching: {url}")
+            resp = requests.post(api_url, headers=headers, json=payload, timeout=60)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("success"):
+                    # Karena user ingin 'GASS' dan cepat, kita cetak Job ID 
+                    print(f"[☁️] CF Job ID success: {data.get('result')}")
+                    return data.get("result"), "text/html", True
+            else:
+                print(f"[!] Cloudflare Error ({resp.status_code}): {resp.text}")
+        except Exception as e:
+            print(f"[!] Cloudflare Exception: {e}")
+        return None, None, False
+
+    # =========================================================================
     # EXTRACT CONTENT (dipanggil per thread)
     # =========================================================================
 
@@ -282,6 +317,13 @@ class WebCrawlerAI:
 
         try:
             print(f"[→] Fetching: {url}")
+            
+            # Coba lewat Cloudflare jika tersedia
+            if CF_ACCOUNT_ID and CF_API_TOKEN:
+                # Untuk saat ini kita cetak saja log-nya, fetch asli tetap jalan
+                # sebagai backup sampai polling diimplementasikan jika perlu.
+                self._fetch_via_cloudflare(url)
+
             response = requests.get(url, headers=headers, timeout=20, verify=False)
             response.raise_for_status()
             content_type = response.headers.get('Content-Type', '').lower()
@@ -299,15 +341,26 @@ class WebCrawlerAI:
 
             # ── Cabang HTML ────────────────────────────────────────────────
             elif 'text/html' in content_type:
-                response.encoding = response.apparent_encoding
-                soup  = BeautifulSoup(response.text, 'html.parser')
-                title = soup.title.string.strip() if soup.title else "No Title"
-                for noise in soup(["script", "style", "nav", "footer",
-                                   "header", "aside", "form", "button", "iframe"]):
-                    noise.decompose()
-                content_tags = soup.find_all(['p', 'h1', 'h2', 'h3', 'article', 'section'])
+                # Parsing cepat dengan Selectolax
+                tree = HTMLParser(response.text)
+                
+                # Ekstrak Judul
+                title_node = tree.css_first('title')
+                title = title_node.text().strip() if title_node else "No Title"
+                
+                # Bersihkan elemen noise secara agresif
+                selectors_to_remove = [
+                    "script", "style", "nav", "footer", "header", 
+                    "aside", "form", "button", "iframe", "noscript", ".ads", "#ads"
+                ]
+                for selector in selectors_to_remove:
+                    for node in tree.css(selector):
+                        node.decompose()
+                
+                # Ambil teks dari tag bermakna
+                content_tags = tree.css('p, h1, h2, h3, article, section, div.content, .entry-content')
                 text_content = " ".join(
-                    t.get_text().strip() for t in content_tags if t.get_text().strip()
+                    t.text(separator=" ").strip() for t in content_tags if t.text().strip()
                 )
             else:
                 if self.notifier: self.notifier.on_skipped("Content-Type", url)
