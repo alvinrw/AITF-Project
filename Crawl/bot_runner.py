@@ -17,6 +17,7 @@ import time
 import os
 from datetime import datetime, timedelta
 import config
+from database_manager import DatabaseManager
 
 # upload_drive diimport secara LAZY di dalam _do_upload_job()
 _upload_available = None
@@ -38,6 +39,9 @@ UPLOAD_INTERVAL_HOURS = config.UPLOAD_INTERVAL_HOURS
 crawler_procs  = []  # list of (instance_id, subprocess.Popen)
 last_update_id = 0
 proc_lock     = threading.Lock()
+engine_proc   = None  # Binary aitf-engine
+importer_proc = None  # python url_importer.py
+db_manager    = DatabaseManager()
 
 # ─── Upload State ────────────────────────────────────────────────────────────
 
@@ -167,6 +171,9 @@ def build_status():
         with open(visited_file, "r") as vf:
             visited = sum(1 for _ in vf)
 
+    # Statistik SQLite
+    db_stats = db_manager.get_stats()
+    
     # Info upload
     last_up = _last_upload_time.strftime("%d %b %Y %H:%M") if _last_upload_time else "-"
     next_up = _next_upload_time.strftime("%d %b %Y %H:%M") if _next_upload_time else "-"
@@ -174,24 +181,21 @@ def build_status():
 
     # Estimasi token (cepat, berbasis ukuran file)
     token_est = estimate_tokens()
-    if token_est >= 1_000_000:
-        token_str = f"~{token_est / 1_000_000:.2f}M token"
-    elif token_est >= 1_000:
-        token_str = f"~{token_est / 1_000:.1f}K token"
-    else:
-        token_str = f"{token_est} token"
+    token_str = f"~{token_est / 1_000_000:.2f}M" if token_est >= 1_000_000 else f"~{token_est / 1_000:.1f}K"
 
     return (
-        f"📊 <b>Status Crawler</b>\n"
+        f"📊 <b>Status Super-Crawler (Hybrid)</b>\n"
         f"Status     : {state}\n"
-        f"PID        : {pid_list}\n"
-        f"✅ Dokumen  : {saved} file tersimpan\n"
-        f"🔗 Visited  : {visited} URL sudah dikunjungi\n"
-        f"🪙 Estimasi : {token_str} (Qwen2.5)\n"
-        f"🕐 Waktu    : {datetime.now().strftime('%d %b %Y %H:%M:%S')}\n"
-        f"\n"
+        f"Worker PID : {pid_list}\n\n"
+        f"🗄️ <b>Database Antrean</b>\n"
+        f"⏳ Pending    : {db_stats['pending']}\n"
+        f"⚙️ Processing : {db_stats['processing']}\n"
+        f"✅ Completed  : {db_stats['visited']}\n"
+        f"❌ Failed     : {db_stats['failed']}\n\n"
+        f"🪙 Estimasi Token: {token_str} (Qwen2.5)\n"
+        f"🕐 Waktu: {datetime.now().strftime('%H:%M:%S')}\n\n"
         f"☁️ <b>Upload Drive</b>\n"
-        f"Terakhir   : {last_up}\n"
+        f"Terakhir: {last_up}\n"
         f"{up_status}"
     )
 
@@ -211,7 +215,16 @@ def _do_upload_job():
         _is_uploading = True
 
     try:
-        # ── Lazy import: coba load upload_drive saat pertama kali dipakai ──
+        # 0. Jalankan Data Cleaner (Cleaning + Tokenization)
+        send("🧹 Membersihkan data (DataCleaner) & Menghitung Token...")
+        try:
+            from data_cleaner import DataCleaner
+            cleaner = DataCleaner()
+            cleaner.process_all()
+        except Exception as e:
+            send(f"⚠️ Gagal menjalankan DataCleaner: {e}")
+            
+        # 1. Jalankan Upload
         try:
             from upload_drive import upload_data_raw
             _upload_available = True
@@ -261,36 +274,37 @@ def upload_scheduler():
 # =============================================================================
 
 def start_crawler():
-    """Spawn NUM_INSTANCES subprocess main.py dengan delay berbeda untuk hindari DDG rate-limit."""
-    global crawler_procs
-    # Delay antar instans agar tidak bersamaan nge-hit DDG
-    DELAYS = [0, 20, 45, 75, 120]  # detik (cukup untuk 5 instans)
+    """Spawn Engine, Importer, dan Workers."""
+    global crawler_procs, engine_proc, importer_proc
+    
     with proc_lock:
-        # Cek apakah sudah ada yang jalan
         still_running = [(i, p) for i, p in crawler_procs if p.poll() is None]
         if still_running:
-            return False, f"{len(still_running)} instans crawler sudah berjalan!"
+            return False, "Sistem sudah berjalan!"
 
+        # 1. Start AITF Engine (Binary)
+        engine_bin = os.path.join(SCRIPT_DIR, "crawler-engine", "Windows", "aitf-engine.exe")
+        if os.path.exists(engine_bin):
+            engine_proc = subprocess.Popen([engine_bin, "crawl", "--token", config.CLOUDFLARE_API_TOKEN], 
+                                           cwd=os.path.dirname(engine_bin)) # Token dummy/API Token
+            print(f"[*] AITF Engine started. PID: {engine_proc.pid}")
+
+        # 2. Start URL Importer
+        importer_script = os.path.join(SCRIPT_DIR, "url_importer.py")
+        importer_proc = subprocess.Popen(["python", importer_script], cwd=SCRIPT_DIR)
+        print(f"[*] URL Importer started. PID: {importer_proc.pid}")
+
+        # 3. Start Consumer Workers
         crawler_procs = []
-        pids = []
         for idx in range(1, NUM_INSTANCES + 1):
-            delay = DELAYS[idx - 1] if idx - 1 < len(DELAYS) else (idx - 1) * 25
             log_path = LOG_FILE.format(idx)
             log_f = open(log_path, "a", encoding="utf-8")
             env = os.environ.copy()
             env["CRAWLER_INSTANCE_ID"] = str(idx)
-            env["CRAWLER_INSTANCE_DELAY"] = str(delay)
-            proc = subprocess.Popen(
-                ["python", "-u", MAIN_SCRIPT],
-                stdout=log_f,
-                stderr=log_f,
-                cwd=SCRIPT_DIR,
-                env=env,
-            )
+            proc = subprocess.Popen(["python", "-u", MAIN_SCRIPT], stdout=log_f, stderr=log_f, cwd=SCRIPT_DIR, env=env)
             crawler_procs.append((idx, proc))
-            pids.append(f"#{idx}=PID:{proc.pid}")
 
-    return True, f"Sukses! {NUM_INSTANCES} instans dimulai: {', '.join(pids)}"
+    return True, f"Sukses! Hybrid System Aktif ({NUM_INSTANCES} workers)."
 
 
 def stop_crawler():
@@ -307,6 +321,16 @@ def stop_crawler():
                 p.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 p.kill()
+        
+        # Hentikan Engine & Importer
+        global engine_proc, importer_proc
+        if engine_proc: 
+            engine_proc.terminate()
+            engine_proc = None
+        if importer_proc: 
+            importer_proc.terminate()
+            importer_proc = None
+            
         crawler_procs = []
     return True, f"{len(running)} instans crawler dihentikan."
 

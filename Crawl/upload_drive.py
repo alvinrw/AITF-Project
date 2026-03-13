@@ -77,6 +77,21 @@ def _zip_folder(folder_path):
     buf.seek(0)
     return buf, file_count, size_kb
 
+def _zip_file(file_path):
+    """Compress satu file saja ke BytesIO ZIP."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.write(file_path, os.path.basename(file_path))
+    size_kb = buf.tell() // 1024
+    buf.seek(0)
+    return buf, size_kb
+
+def _count_tokens_simple(file_path):
+    """Estimasi token Qwen2.5 sederhana (bytes / 3.7)."""
+    if not os.path.exists(file_path): return 0
+    size = os.path.getsize(file_path)
+    return int(size / 3.7)
+
 
 def _delete_old_uploads(service):
     """
@@ -107,75 +122,49 @@ def _delete_old_uploads(service):
 # PUBLIC API
 # =============================================================================
 
-def upload_data_raw(folder_path="data_raw", notifier=None):
+def upload_data_raw(folder_path="data_raw", clean_file="data_training_cpt.jsonl", notifier=None):
     """
-    Zip seluruh isi folder_path, hapus upload lama di Drive,
-    lalu upload zip baru.
-
-    Returns
-    -------
-    (success: bool, message: str)
+    Zip data_raw dan data_clean, lalu upload keduanya.
     """
     folder_path = os.path.abspath(folder_path)
-
-    if not os.path.isdir(folder_path):
-        msg = f"❌ Folder tidak ditemukan: {folder_path}"
-        if notifier: notifier.send(msg)
-        return False, msg
-
-    files_in_folder = [f for f in os.listdir(folder_path)
-                       if os.path.isfile(os.path.join(folder_path, f))]
-    if not files_in_folder:
-        msg = "⚠️ Folder data_raw kosong, tidak ada yang di-upload."
-        if notifier: notifier.send(msg)
-        return False, msg
-
+    clean_path = os.path.abspath(clean_file)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    
     try:
-        if notifier:
-            notifier.send(
-                f"⬆️ <b>Upload ke Drive dimulai…</b>\n"
-                f"Mem-zip {len(files_in_folder)} file di <code>data_raw/</code>"
-            )
-
-        # 1. Zip folder
-        zip_buf, file_count, size_kb = _zip_folder(folder_path)
-
-        # 2. Koneksi ke Drive
         service = _get_drive_service()
+        _delete_old_uploads(service)
+        
+        # 1. Upload Raw Markdown (Zipped)
+        if os.path.isdir(folder_path) and os.listdir(folder_path):
+            zip_buf, file_count, size_kb = _zip_folder(folder_path)
+            raw_name = f"data_raw_{timestamp}.zip"
+            media = MediaIoBaseUpload(zip_buf, mimetype="application/zip", resumable=True)
+            service.files().create(
+                body={"name": raw_name, "parents": [FOLDER_ID]},
+                media_body=media, fields="id", supportsAllDrives=True
+            ).execute()
+            if notifier: notifier.send(f"📦 Raw Data Uploaded: {file_count} files ({size_kb} KB)")
 
-        # 3. Hapus upload lama (data_raw_*.zip) di folder yang sama
-        deleted = _delete_old_uploads(service)
-        if deleted > 0 and notifier:
-            notifier.send(f"🗑️ {deleted} file upload lama dihapus dari Drive.")
+        # 2. Upload Clean JSONL (Zipped)
+        if os.path.exists(clean_path):
+            tokens = _count_tokens_simple(clean_path)
+            zip_buf_clean, size_kb_clean = _zip_file(clean_path)
+            clean_name = f"data_clean_{timestamp}.zip"
+            media_clean = MediaIoBaseUpload(zip_buf_clean, mimetype="application/zip", resumable=True)
+            service.files().create(
+                body={"name": clean_name, "parents": [FOLDER_ID]},
+                media_body=media_clean, fields="id", supportsAllDrives=True
+            ).execute()
+            
+            token_str = f"{tokens / 1_000_000:.2f}M" if tokens > 1_000_000 else f"{tokens / 1_000:.1f}K"
+            if notifier: notifier.send(f"✨ Clean Data Uploaded! Token Count: ~{token_str} (Qwen2.5)")
 
-        # 4. Upload zip baru
-        timestamp  = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        drive_name = f"{DRIVE_FILE_PREFIX}{timestamp}.zip"
-
-        media  = MediaIoBaseUpload(zip_buf, mimetype="application/zip", resumable=True)
-        result = service.files().create(
-            body={"name": drive_name, "parents": [FOLDER_ID]},
-            media_body=media,
-            fields="id, name",
-            supportsAllDrives=True
-        ).execute()
-
-        drive_file_id = result.get("id", "-")
-        msg = (
-            f"✅ <b>Upload berhasil!</b>\n"
-            f"📦 <code>{drive_name}</code>\n"
-            f"📁 {file_count} file | {size_kb:,} KB\n"
-            f"🆔 Drive ID: <code>{drive_file_id}</code>"
-        )
-        if notifier: notifier.send(msg)
-        print(f"[UPLOAD] Berhasil: {drive_name} ({file_count} file, {size_kb} KB)")
-        return True, msg
+        return True, "Dual Upload Sukses"
 
     except Exception as e:
-        msg = f"❌ Upload gagal: {e}"
-        if notifier: notifier.send(msg)
-        print(f"[UPLOAD] {msg}")
-        return False, msg
+        if notifier: notifier.send(f"❌ Upload Gagal: {e}")
+        return False, str(e)
 
 
 # =============================================================================

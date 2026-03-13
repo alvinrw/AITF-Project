@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from duckduckgo_search import DDGS
 from filelock import FileLock
 from bot_monitor import TelegramNotifier
+from database_manager import DatabaseManager
 import config
 
 # Fix: Paksa print() di Windows menggunakan UTF-8 agar tidak crash
@@ -46,29 +47,16 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class WebCrawlerAI:
-    def __init__(
-        self,
-        output_dir="data_raw",
-        blocked_file="blocked_domain.txt",
-        priority_file="domain_priority.txt",
-        keyword_file="keyword.txt",
-        notifier=None,
-        visited_file="visited_urls.txt",
-        instance_id=1,
-    ):
-        # Resolve semua path relatif ke direktori script (bukan cwd)
-        def _abspath(p):
-            return p if os.path.isabs(p) else os.path.join(SCRIPT_DIR, p)
+    def __init__(self, instance_id=1, keywords=None):
+        self.instance_id = instance_id
+        self.output_dir  = os.path.join(SCRIPT_DIR, "data_raw")
+        os.makedirs(self.output_dir, exist_ok=True)
 
-        self.output_dir   = _abspath(output_dir)
-        self.visited_file = _abspath(visited_file)
-        self.notifier     = notifier
-        self.instance_id  = instance_id
-        # Lock file di-simpan di-samping visited_urls.txt (nama: visited_urls.txt.lock)
-        self._file_lock   = FileLock(self.visited_file + ".lock", timeout=10)
-        blocked_file  = _abspath(blocked_file)
-        priority_file = _abspath(priority_file)
-        keyword_file  = _abspath(keyword_file)
+        self.db = DatabaseManager()
+        self.notifier = TelegramNotifier(token=config.BOT_TOKEN, chat_id=config.BOT_CHAT_ID) if config.BOT_TOKEN else None
+        
+        # Keywords tetap disimpan untuk filter relevansi
+        self.keywords = keywords or self._load_keywords()
 
         # ── Shared state (thread-safe) ─────────────────────────────────────
         self._hash_lock    = threading.Lock()
@@ -82,9 +70,9 @@ class WebCrawlerAI:
         self.content_hashes = set()
 
         # ── Konfigurasi domain & keyword ────────────────────────────────────
-        self.blocked_domains   = self._load_list(blocked_file)
-        self.priority_domains  = self._load_list(priority_file)
-        self.search_keywords   = self._load_list(keyword_file)
+        self.blocked_domains   = self._load_list(os.path.join(SCRIPT_DIR, "blocked_domain.txt"))
+        self.priority_domains  = self._load_list(os.path.join(SCRIPT_DIR, "domain_priority.txt"))
+        self.search_keywords   = self._load_list(os.path.join(SCRIPT_DIR, "keyword.txt"))
 
         # ── Filter relevansi ─────────────────────────────────────────────────
         self.core_keywords = [
@@ -121,29 +109,22 @@ class WebCrawlerAI:
                 return [l.strip() for l in f if l.strip() and not l.startswith('#')]
         return []
 
+    def _load_keywords(self):
+        """Load keywords from keyword.txt."""
+        keyword_file = os.path.join(SCRIPT_DIR, "keyword.txt")
+        return self._load_list(keyword_file)
+
     def _load_visited(self):
         """Baca visited_urls.txt pakai FileLocker agar aman saat multi-instans startup bersamaan."""
-        try:
-            with self._file_lock:
-                if os.path.exists(self.visited_file):
-                    with open(self.visited_file, 'r', encoding='utf-8') as f:
-                        urls = {l.strip() for l in f if l.strip()}
-                    print(f"[Instans-{self.instance_id}] Loaded {len(urls):,} visited URLs")
-                    return urls
-        except Exception as e:
-            print(f"[Instans-{self.instance_id}] Gagal load visited: {e}")
+        # This method is no longer used for tracking visited URLs in the new architecture
+        # but kept for compatibility if other parts of the code still reference it.
+        # The actual visited status is now managed by DatabaseManager.
         return set()
 
     def _save_visited(self, url):
         """Simpan URL ke disk menggunakan FileLock (aman lintas proses)."""
-        with self._visited_lock:          # in-process lock (cepat)
-            self.visited_urls.add(url)   # update in-memory set
-        try:
-            with self._file_lock:        # OS-level inter-process lock
-                with open(self.visited_file, 'a', encoding='utf-8') as f:
-                    f.write(url + '\n')
-        except Exception as e:
-            print(f"[Instans-{self.instance_id}] Gagal simpan visited: {e}")
+        # This method is no longer used in the new architecture.
+        pass
 
     def _get_hash(self, text):
         return hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -298,12 +279,7 @@ class WebCrawlerAI:
             if self.notifier: self.notifier.on_skipped("File Type", url)
             return None
 
-        # 2. Cek duplikasi URL (thread-safe)
-        with self._visited_lock:
-            if url in self.visited_urls:
-                return None
-
-        # 3. Cek blocked domain
+        # 2. Cek blocked domain
         if self.is_blocked(url):
             if self.notifier: self.notifier.on_skipped("Blocked Domain", url)
             return None
@@ -380,9 +356,10 @@ class WebCrawlerAI:
                 self.content_hashes.add(content_hash)
 
             # 6. Tandai visited (thread-safe)
-            with self._visited_lock:
-                self.visited_urls.add(url)
-            self._save_visited(url)
+            # This is now handled by DatabaseManager.mark_completed/failed
+            # with self._visited_lock:
+            #     self.visited_urls.add(url)
+            # self._save_visited(url)
 
             # 7. Simpan sebagai Markdown
             quality     = self.get_quality_score(text_content, url)
@@ -424,72 +401,38 @@ class WebCrawlerAI:
     # RUN LOOP UTAMA  (search sequensial + crawl paralel)
     # =========================================================================
 
-    def run(self, stop_fn=None):
-        """
-        Arsitektur:
-        - Keyword search     : sequential (DuckDuckGo rate-limit)
-        - URL crawling       : parallel (ThreadPoolExecutor, NUM_CRAWL_WORKERS)
-        """
-        import random
-        cycle = 0
-
-        with ThreadPoolExecutor(max_workers=NUM_CRAWL_WORKERS, thread_name_prefix="crawl") as executor:
-            while True:
-                if stop_fn and stop_fn():
-                    break
-
-                cycle += 1
-                keywords = self.search_keywords.copy()
-                random.shuffle(keywords)
-                print(f"\n[*] === SIKLUS KE-{cycle} ({len(keywords)} kata kunci) ===")
-                if self.notifier:
-                    self.notifier.send(
-                        f"🔄 Siklus ke-{cycle} dimulai "
-                        f"({len(keywords)} kata kunci, {NUM_CRAWL_WORKERS} crawl workers)"
-                    )
-
-                for q in keywords:
-                    if stop_fn and stop_fn():
-                        break
-
-                    urls = self.search_duckduckgo(q)
-                    if not urls:
-                        time.sleep(SEARCH_DELAY)
-                        continue
-
-                    # Submit semua URL ke thread pool
-                    futures = {executor.submit(self.extract_content, url): url for url in urls}
-                    # CATATAN: tidak pakai timeout di as_completed karena
-                    # tiap request sudah punya timeout=20s di dalam extract_content.
-                    # Kalau pakai timeout di sini, TimeoutError bisa crash loop utama.
+    def run(self):
+        """Metode utama: Ambil URL dari SQLite dan crawl selamanya."""
+        print(f"\n[🚀] Instance #{self.instance_id} Consumer aktif!")
+        
+        while True:
+            # Ambil batch URL dari database
+            batch_size = config.NUM_CRAWL_WORKERS * 5
+            urls = self.db.get_next_batch(limit=batch_size)
+            
+            if not urls:
+                print(f"[*] Instance #{self.instance_id}: Antrean kosong. Menunggu URL baru...")
+                time.sleep(30) # Tunggu producer (AITF Engine / DDGS) mengisi URL
+                continue
+            
+            print(f"[*] Instance #{self.instance_id} memproses batch {len(urls)} URL.")
+            
+            with ThreadPoolExecutor(max_workers=config.NUM_CRAWL_WORKERS) as executor:
+                futures = {executor.submit(self.extract_content, url): url for url in urls}
+                for future in as_completed(futures):
+                    url = futures[future]
                     try:
-                        for future in as_completed(futures):
-                            try:
-                                future.result()
-                            except Exception as e:
-                                print(f"[!] Worker exception: {e}")
+                        result = future.result()
+                        if result:
+                            self.db.mark_completed(url)
+                        else:
+                            self.db.mark_failed(url)
                     except Exception as e:
-                        print(f"[!] Unexpected error saat crawl batch: {e}")
-
-                    # Jeda antar keyword agar DuckDuckGo tidak ban
-                    if not (stop_fn and stop_fn()):
-                        time.sleep(SEARCH_DELAY)
-
-                if stop_fn and stop_fn():
-                    break
-
-                print(f"[*] Siklus {cycle} selesai. Jeda 2 menit ...")
-                if self.notifier:
-                    self.notifier.send(f"⏳ Siklus {cycle} selesai. Jeda 2 menit ...")
-
-                for _ in range(120):
-                    if stop_fn and stop_fn():
-                        break
-                    time.sleep(1)
-
-        print(f"\n[✓] Crawler berhenti. Total siklus: {cycle}.")
-        if self.notifier:
-            self.notifier.on_finish()
+                        print(f"[!] Worker Error {url}: {e}")
+                        self.db.mark_failed(url)
+            
+            # Jeda antar batch demi kesehatan CPU/Koneksi
+            time.sleep(2)
 
 
 # =============================================================================
