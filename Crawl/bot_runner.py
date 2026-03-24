@@ -265,6 +265,19 @@ def _do_upload_job():
             clean_file=os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl"),
             notifier=_SimpleNotifier()
         )
+        
+        # 2. Jalankan Upload HuggingFace
+        try:
+            from upload_huggingface import upload_to_huggingface
+            upload_to_huggingface(
+                repo_id="alvinrifky/Crawling-MKN_1",
+                folder_raw=DATA_DIR,
+                clean_file=os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl"),
+                notifier=_SimpleNotifier()
+            )
+        except Exception as e:
+            send(f"⚠️ Gagal upload ke HuggingFace: {e}")
+            
         _last_upload_time = datetime.now()
         _next_upload_time = _last_upload_time + timedelta(hours=UPLOAD_INTERVAL_HOURS)
     finally:
@@ -329,7 +342,13 @@ def start_crawler():
                 )
                 print(f"[*] AITF Engine started. PID: {engine_proc.pid}")
             else:
+                print(f"[!] GAGAL: File AITF Engine tidak ditemukan di: {engine_bin}")
+                print("[!] (Pastikan file binary sudah diupload ke server dan ada di folder yang benar)")
                 engine_proc = None
+        except PermissionError:
+            print(f"[!] GAGAL: Tidak ada izin eksekusi (Permission Denied) untuk {engine_bin}.")
+            print(f"[!] (Jalankan: chmod +x {engine_bin})")
+            engine_proc = None
         except Exception as e:
             print(f"[!] Gagal menyalakan AITF Engine: {e}")
             engine_proc = None
@@ -343,6 +362,7 @@ def start_crawler():
         crawler_procs = []
         for idx in range(1, NUM_INSTANCES + 1):
             log_path = LOG_FILE.format(idx)
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
             log_f = open(log_path, "a", encoding="utf-8")
             env = os.environ.copy()
             env["CRAWLER_INSTANCE_ID"] = str(idx)
