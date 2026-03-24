@@ -1,18 +1,19 @@
-# File & folder yang tidak perlu di-commit ke Git
-
-# Credentials & konfigurasi sensitif
+# ── Credentials & konfigurasi sensitif ───────────────────────────────────────
 config.py
-*.json
+credentials/
 
-# Data crawler (bisa sangat besar)
+# ── Data crawler (bisa sangat besar) ─────────────────────────────────────────
 data_raw/
-visited_urls.txt
+data/
+output/
 
-# Log
-crawl.log
+# ── Log files ────────────────────────────────────────────────────────────────
+logs/
 
-# Python cache
+# ── Python cache ─────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
+
+# ── Environment ──────────────────────────────────────────────────────────────
 .env

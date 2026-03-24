@@ -70,9 +70,9 @@ class WebCrawlerAI:
         self.content_hashes = set()
 
         # ── Konfigurasi domain & keyword ────────────────────────────────────
-        self.blocked_domains   = self._load_list(os.path.join(SCRIPT_DIR, "blocked_domain.txt"))
-        self.priority_domains  = self._load_list(os.path.join(SCRIPT_DIR, "domain_priority.txt"))
-        self.search_keywords   = self._load_list(os.path.join(SCRIPT_DIR, "keyword.txt"))
+        self.blocked_domains   = self._load_list(os.path.join(SCRIPT_DIR, "config", "blocked_domain.txt"))
+        self.priority_domains  = self._load_list(os.path.join(SCRIPT_DIR, "config", "domain_priority.txt"))
+        self.search_keywords   = self._load_list(os.path.join(SCRIPT_DIR, "config", "keyword.txt"))
 
         # ── Filter relevansi ─────────────────────────────────────────────────
         self.core_keywords = [
@@ -111,7 +111,7 @@ class WebCrawlerAI:
 
     def _load_keywords(self):
         """Load keywords from keyword.txt."""
-        keyword_file = os.path.join(SCRIPT_DIR, "keyword.txt")
+        keyword_file = os.path.join(SCRIPT_DIR, "config", "keyword.txt")
         return self._load_list(keyword_file)
 
     def _load_visited(self):
@@ -176,15 +176,27 @@ class WebCrawlerAI:
         return any(p.lower() in domain for p in self.priority_domains)
 
     def is_relevant(self, text, url=""):
-        if len(text) <= 400:
+        if len(text) <= 500: # Diperketat, artikel terlalu pendek (di bawah 500 karakter) dibuang
             return False
+            
         text_lower = text.lower()
-        has_core   = any(ck in text_lower for ck in self.core_keywords)
-        if not has_core:
+        core_hits = sum(1 for ck in self.core_keywords if ck in text_lower)
+        context_hits = sum(1 for cx in self.context_keywords if cx in text_lower)
+        
+        # Syarat Utama: Wajib ada Core Keyword (misal: "miskin", "bansos")
+        if core_hits == 0:
             return False
+            
+        # Jika dari situs prioritas (Situs Resmi Jatim), syaratnya sedikit lebih longgar
         if url and self.is_priority(url):
             return True
-        return any(cx in text_lower for cx in self.context_keywords)
+            
+        # Jika bukan situs prioritas, WAJIB ada persilangan antara Core + Context (misal: "Miskin" + "Jawa Timur")
+        # Atau artikelnya sangat mendalam membahas kemiskinan (Core Hits >= 3)
+        if context_hits > 0 or core_hits >= 3:
+            return True
+            
+        return False
 
     # =========================================================================
     # EKSTRAKSI KONTEN
@@ -324,6 +336,48 @@ class WebCrawlerAI:
                 title_node = tree.css_first('title')
                 title = title_node.text().strip() if title_node else "No Title"
                 
+                # [🕸️ SPIDER] RECURSIVE DISCOVERY
+                # Ambil semua link dari halaman web ini dan masukkan ke antrean Database
+                try:
+                    from urllib.parse import urljoin, urlparse
+                    
+                    # Daftar domain/ekstensi yang diperbolehkan agar tidak nyasar ke web sampah/judi
+                    allowed_domains = ('.go.id', '.ac.id', '.sch.id', 'bps.go.id', 'kemensos.go.id', 'jatimprov.go.id', 'kominfo.go.id', 'antaranews.com', 'kompas.com', 'detik.com')
+                    
+                    # Keyword Wajib di URL (Spider hanya merayap ke halaman yang URL-nya mengandung kata ini)
+                    spider_keywords = (
+                        'miskin', 'kemiskinan', 'poverty', 'bansos', 'pkh', 'blt', 'bantuan', 'sosial', 
+                        'stunting', 'kesejahteraan', 'disabilitas', 'pengangguran', 'bpnt', 'dtks', 'desil', 
+                        'kip', 'rentan', 'marjinal', 'subsidi', 'graduasi', 'dana-desa', 'puspa', 
+                        'dinsos', 'bappeda', 'tnp2k', 'jatim', 'jawa-timur', 'kpm', 'ekstrem'
+                    )
+                    
+                    new_links = set()
+                    for a_tag in tree.css('a'):
+                        href = a_tag.attributes.get('href')
+                        if href:
+                            abs_url = urljoin(url, href).split('#')[0]
+                            # Filter: Harus HTTP/HTTPS
+                            if abs_url.startswith('http'):
+                                parsed = urlparse(abs_url)
+                                domain = parsed.netloc.lower()
+                                path_lower = parsed.path.lower()
+                                
+                                # Filter 1: Domain harus masuk dalam allowed_domains
+                                if any(domain.endswith(d) for d in allowed_domains):
+                                    # Filter 2: URL harus mengandung kata kunci kemiskinan/bantuan
+                                    # ATAU berasal dari root domain khusus BPS/Kemensos tempat kumpulan data berada
+                                    if any(kw in path_lower for kw in spider_keywords) or any(x in domain for x in ['bps.go.id', 'kemensos.go.id']):
+                                        new_links.append(abs_url) if isinstance(new_links, list) else new_links.add(abs_url)
+                    
+                    if new_links:
+                        # db.add_urls otomatis mengabaikan URL duplikat
+                        added = self.db.add_urls(list(new_links), source="spider")
+                        if added > 0:
+                            print(f"    [🕸️] Spider menyedot {added} link RELEVAN dari {title[:25]}...")
+                except Exception as e:
+                    print(f"    [!] Spider Error: {e}")
+                
                 # Bersihkan elemen noise secara agresif
                 selectors_to_remove = [
                     "script", "style", "nav", "footer", "header", 
@@ -361,8 +415,15 @@ class WebCrawlerAI:
             #     self.visited_urls.add(url)
             # self._save_visited(url)
 
-            # 7. Simpan sebagai Markdown
+            # 7. Hitung Skor Kualitas
             quality     = self.get_quality_score(text_content, url)
+            
+            # [FILTER KETAT] Buang artikel yang kualitasnya di bawah standar (Score < 35)
+            if quality < 35:
+                if self.notifier: self.notifier.on_skipped(f"Low Quality ({quality})", url)
+                return None
+                
+            # 8. Simpan sebagai Markdown
             source_type = self.get_source_type(url)
             prio        = self.is_priority(url)
             self._save_markdown(url, title, text_content, quality, source_type, prio)
@@ -411,8 +472,9 @@ class WebCrawlerAI:
             urls = self.db.get_next_batch(limit=batch_size)
             
             if not urls:
+                # Kurangi sleep time agar responsif seperti saran
                 print(f"[*] Instance #{self.instance_id}: Antrean kosong. Menunggu URL baru...")
-                time.sleep(30) # Tunggu producer (AITF Engine / DDGS) mengisi URL
+                time.sleep(5) 
                 continue
             
             print(f"[*] Instance #{self.instance_id} memproses batch {len(urls)} URL.")
@@ -440,50 +502,12 @@ class WebCrawlerAI:
 # =============================================================================
 
 if __name__ == "__main__":
-    import signal
-    import traceback
-
-    # Baca instance ID dan delay dari environment variable (diset oleh bot_runner.py)
-    instance_id    = int(os.environ.get("CRAWLER_INSTANCE_ID", "1"))
-    instance_delay = int(os.environ.get("CRAWLER_INSTANCE_DELAY", "0"))
-
-    notifier = TelegramNotifier(token=config.BOT_TOKEN, chat_id=config.BOT_CHAT_ID)
-
-    _stop_event = threading.Event()
-
-    def _handle_sigterm(signum, frame):
-        print(f"[Instans-{instance_id}] SIGTERM diterima — menghentikan crawler graceful...")
-        _stop_event.set()
-
-    signal.signal(signal.SIGTERM, _handle_sigterm)
-
-    # Delay antar-instans agar tidak serempak hit DuckDuckGo (diset oleh bot_runner)
-    if instance_delay > 0:
-        print(f"[Instans-{instance_id}] Menunggu {instance_delay}s sebelum mulai (anti DDG rate-limit)...")
-        for _ in range(instance_delay):
-            if _stop_event.is_set():
-                break
-            time.sleep(1)
-
-    crawler = WebCrawlerAI(notifier=notifier, instance_id=instance_id)
-
-    if not crawler.search_keywords:
-        print(f"[Instans-{instance_id}] keyword.txt kosong!")
-    else:
-        notifier.on_start(len(crawler.search_keywords))
-        try:
-            crawler.run(stop_fn=_stop_event.is_set)
-        except KeyboardInterrupt:
-            print(f"\n[Instans-{instance_id}] Dihentikan manual (Ctrl+C).")
-        except BaseException as e:
-            tb = traceback.format_exc()
-            err_msg = (
-                f"❌ <b>Crawler Instans-{instance_id} crash!</b>\n"
-                f"<code>{type(e).__name__}: {str(e)[:200]}</code>\n\n"
-                f"<pre>{tb[-1000:]}</pre>"
-            )
-            print(f"[Instans-{instance_id}] CRASH: {tb}")
-            notifier.send(err_msg)
-        finally:
-            notifier.on_finish()
-            print(f"[Instans-{instance_id}] Selesai. Data tersimpan di '{crawler.output_dir}'")
+    # Ambil Instance ID dari env (diset oleh bot_runner)
+    inst_id = int(os.environ.get("CRAWLER_INSTANCE_ID", 1))
+    crawler = WebCrawlerAI(instance_id=inst_id)
+    try:
+        crawler.run()
+    except KeyboardInterrupt:
+        print(f"\n[Instans-{inst_id}] Dihentikan manual.")
+    except Exception as e:
+        print(f"[!] Error fatal di Instans-{inst_id}: {e}")

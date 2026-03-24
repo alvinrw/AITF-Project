@@ -14,8 +14,8 @@ import config
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── KONFIGURASI (dari config.py) ───────────────────────────────────
-CREDENTIALS_FILE = os.path.join(SCRIPT_DIR, "credentials.json")
-TOKEN_FILE       = os.path.join(SCRIPT_DIR, "token.json")
+CREDENTIALS_FILE = os.path.join(SCRIPT_DIR, "credentials", "credentials.json")
+TOKEN_FILE       = os.path.join(SCRIPT_DIR, "credentials", "token.json")
 FOLDER_ID        = config.DRIVE_FOLDER_ID
 SCOPES           = ["https://www.googleapis.com/auth/drive.file"]
 
