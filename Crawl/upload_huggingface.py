@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 from huggingface_hub import HfApi
 import config
 
@@ -14,23 +16,36 @@ def upload_to_huggingface(repo_id="alvinrifky/Crawling-MKN_1", folder_raw="data_
         except Exception as repo_e:
             print(f"[HfApi] Peringatan create_repo: {repo_e}")
             
-        # 1. Upload Folder RAW (disimpan ke folder 'raw' di remote repo)
-        if os.path.isdir(folder_raw) and os.listdir(folder_raw):
-            if notifier: notifier.send("🤗 HuggingFace: Mengunggah folder `raw` ...")
-            api.upload_folder(
-                folder_path=folder_raw,
-                path_in_repo="raw",
-                repo_id=repo_id,
-                repo_type="dataset"
-            )
+        # STRATEGI: Shadow Folder
+        # Karena upload_large_folder tidak mendukung path_in_repo, kita buat struktur lokal 
+        # yang sama persis dengan yang diinginkan di remote repo, lalu upload foldernya.
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            if notifier: notifier.send("🤗 HuggingFace: Menyiapkan struktur folder (Shadow Folder)...")
             
-        # 2. Upload CLEAN (File jsonl dimasukkan ke dalam folder 'clean' di remote repo)
-        if os.path.exists(clean_file):
-            if notifier: notifier.send("🤗 HuggingFace: Mengunggah file `clean` ...")
-            api.upload_file(
-                path_or_fileobj=clean_file,
-                path_in_repo="clean/data_training_cpt.jsonl",
+            # 1. Siapkan folder raw/
+            target_raw = os.path.join(tmp_dir, "raw")
+            os.makedirs(target_raw)
+            if os.path.isdir(folder_raw):
+                for item in os.listdir(folder_raw):
+                    if item.endswith(".zip"): continue # Lewati backup zip
+                    s = os.path.join(folder_raw, item)
+                    d = os.path.join(target_raw, item)
+                    if os.path.isfile(s):
+                        shutil.copy2(s, d) # Copy file ke shadow folder
+            
+            # 2. Siapkan folder clean/
+            target_clean = os.path.join(tmp_dir, "clean")
+            os.makedirs(target_clean)
+            if os.path.exists(clean_file):
+                shutil.copy2(clean_file, os.path.join(target_clean, os.path.basename(clean_file)))
+
+            # 3. Upload menggunakan upload_large_folder
+            if notifier: notifier.send("🤗 HuggingFace: Memulai proses sinkronisasi (upload_large_folder)...")
+            
+            api.upload_large_folder(
                 repo_id=repo_id,
+                folder_path=tmp_dir,
                 repo_type="dataset"
             )
             
