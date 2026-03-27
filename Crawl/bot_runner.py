@@ -532,7 +532,7 @@ def main():
     # ─────────────────────────────────────────────────────────────────────────
 
     send(
-        "🤖 <b>Bot Runner aktif!</b>\n"
+        " <b>Bot Runner aktif!</b>\n"
         "Perintah tersedia:\n"
         "/run    — Mulai crawler\n"
         "/stop   — Hentikan crawler\n"
