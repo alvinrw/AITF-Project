@@ -1,20 +1,8 @@
 import os
-import shutil
+import zipfile
 import tempfile
 from huggingface_hub import HfApi
 import config
-
-# HuggingFace membatasi 10.000 file per direktori.
-# Solusi: bagi file raw ke subdirektori berdasarkan 2 karakter pertama nama file.
-# Contoh: "bps.go.id_abc.md" → raw/bp/bps.go.id_abc.md
-# Ini memberi hingga ~256 bucket, masing-masing menampung ribuan file.
-
-def _get_bucket(filename):
-    """Kembalikan nama subdirektori (2 char pertama nama file, lowercase)."""
-    prefix = filename[:2].lower()
-    # Pastikan prefix hanya mengandung karakter aman untuk path
-    safe = ''.join(c if c.isalnum() else '_' for c in prefix)
-    return safe if safe else '__'
 
 def upload_to_huggingface(repo_id="alvinrifky/Crawling-MKN_1", folder_raw="data_raw", clean_file="data/data_training_cpt.jsonl", notifier=None):
     try:
@@ -26,59 +14,52 @@ def upload_to_huggingface(repo_id="alvinrifky/Crawling-MKN_1", folder_raw="data_
             api.create_repo(repo_id=repo_id, repo_type="dataset", exist_ok=True)
         except Exception as repo_e:
             print(f"[HfApi] Peringatan create_repo: {repo_e}")
-        
-        # ── UPLOAD RAW DATA (dibagi ke subdirektori agar tidak melebihi 10k per dir) ──
-        if os.path.isdir(folder_raw):
-            if notifier: notifier.send("🤗 HuggingFace: Menyiapkan upload folder raw/ (dibagi ke sub-bucket)...")
-            print(f"[HF] Menyiapkan shadow folder dengan struktur bucket...")
 
-            with tempfile.TemporaryDirectory() as tmp_raw:
-                target_root = os.path.join(tmp_raw, "raw")
-                os.makedirs(target_root)
+        with tempfile.TemporaryDirectory() as tmp_dir:
 
-                files_copied = 0
-                bucket_counts = {}
+            # ── UPLOAD RAW DATA sebagai 1 file zip ────────────────────────────
+            if os.path.isdir(folder_raw):
+                zip_path = os.path.join(tmp_dir, "raw.zip")
+                if notifier: notifier.send("🤗 HuggingFace: Mengemas semua file raw/ ke raw.zip...")
+                print(f"[HF] Mengemas {folder_raw}/ → raw.zip ...")
 
-                for item in os.listdir(folder_raw):
-                    if item.endswith(".zip"):
-                        continue  # Lewati backup zip
-                    s = os.path.join(folder_raw, item)
-                    if not os.path.isfile(s):
-                        continue
+                file_count = 0
+                with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+                    for item in sorted(os.listdir(folder_raw)):
+                        if item.endswith(".zip"):
+                            continue  # Lewati zip lama
+                        s = os.path.join(folder_raw, item)
+                        if os.path.isfile(s):
+                            zf.write(s, arcname=item)
+                            file_count += 1
 
-                    bucket = _get_bucket(item)
-                    bucket_dir = os.path.join(target_root, bucket)
-                    os.makedirs(bucket_dir, exist_ok=True)
-                    shutil.copy2(s, os.path.join(bucket_dir, item))
-                    files_copied += 1
-                    bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
+                zip_size_mb = os.path.getsize(zip_path) / (1024 * 1024)
+                print(f"[HF] ✅ raw.zip siap: {file_count} file, {zip_size_mb:.1f} MB")
+                if notifier: notifier.send(f"🤗 Mengupload raw.zip ({file_count} file, {zip_size_mb:.1f} MB)...")
 
-                print(f"[HF] {files_copied} file disiapkan ke {len(bucket_counts)} bucket.")
-                print(f"[HF] Distribusi bucket: { {k: v for k, v in sorted(bucket_counts.items())} }")
-                print(f"[HF] Memulai upload raw/...")
-
-                api.upload_large_folder(
+                api.upload_file(
+                    path_or_fileobj=zip_path,
+                    path_in_repo="raw/raw.zip",
                     repo_id=repo_id,
-                    folder_path=tmp_raw,
                     repo_type="dataset",
                 )
-                print(f"[HF] Upload raw/ selesai.")
+                print(f"[HF] Upload raw/raw.zip selesai.")
 
-        # ── UPLOAD CLEAN DATA ──────────────────────────────────────────────────
-        if os.path.exists(clean_file):
-            if notifier: notifier.send("🤗 HuggingFace: Mengupload file clean/...")
-            print(f"[HF] Upload clean/{os.path.basename(clean_file)}...")
-            api.upload_file(
-                path_or_fileobj=clean_file,
-                path_in_repo=f"clean/{os.path.basename(clean_file)}",
-                repo_id=repo_id,
-                repo_type="dataset",
-            )
-            print(f"[HF] Upload clean/ selesai.")
-        else:
-            print(f"[HF] File clean tidak ditemukan, dilewati: {clean_file}")
+            # ── UPLOAD CLEAN DATA ──────────────────────────────────────────────
+            if os.path.exists(clean_file):
+                if notifier: notifier.send("🤗 HuggingFace: Mengupload file clean/...")
+                print(f"[HF] Upload clean/{os.path.basename(clean_file)}...")
+                api.upload_file(
+                    path_or_fileobj=clean_file,
+                    path_in_repo=f"clean/{os.path.basename(clean_file)}",
+                    repo_id=repo_id,
+                    repo_type="dataset",
+                )
+                print(f"[HF] Upload clean/ selesai.")
+            else:
+                print(f"[HF] File clean tidak ditemukan, dilewati: {clean_file}")
 
-        if notifier: notifier.send(f"✅ HuggingFace Upload Sukses!\nDataset ada di: huggingface.co/datasets/{repo_id}")
+        if notifier: notifier.send(f"✅ HuggingFace Upload Sukses!\nDataset: huggingface.co/datasets/{repo_id}")
         print(f"[HF] ✅ Semua upload selesai!")
         return True, "Upload HuggingFace Sukses"
         
