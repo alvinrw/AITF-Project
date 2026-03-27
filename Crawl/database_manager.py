@@ -9,18 +9,28 @@ class DatabaseManager:
         self.db_path = db_path if db_path is not None else _DEFAULT_DB
 
         self._lock = threading.Lock()
+        # Thread-local storage: setiap thread punya koneksi SQLite sendiri
+        # yang dibuat sekali saja, jauh lebih efisien daripada buka/tutup tiap operasi.
+        self._local = threading.local()
         self._init_db()
+
+    def _get_conn(self):
+        """Kembalikan koneksi SQLite milik thread saat ini. Buat jika belum ada."""
+        if not hasattr(self._local, 'conn') or self._local.conn is None:
+            self._local.conn = sqlite3.connect(self.db_path, timeout=30, check_same_thread=False)
+            self._local.conn.execute("PRAGMA journal_mode=WAL")  # Faster concurrent writes
+        return self._local.conn
 
     def _init_db(self):
         with self._lock:
-            conn = sqlite3.connect(self.db_path, timeout=30)
+            conn = self._get_conn()
             cursor = conn.cursor()
             # Tabel Antrean
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS queue (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url TEXT UNIQUE,
-                    status TEXT DEFAULT 'pending', -- pending, processing, completed, failed
+                    status TEXT DEFAULT 'pending',
                     source TEXT,
                     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -34,7 +44,6 @@ class DatabaseManager:
                 )
             ''')
             conn.commit()
-            conn.close()
 
     def add_urls(self, urls, source="unknown"):
         """Menambahkan URL ke antrean jika belum ada di queue atau visited."""
@@ -43,36 +52,28 @@ class DatabaseManager:
             return 0
 
         with self._lock:
-            conn = sqlite3.connect(self.db_path, timeout=30)
+            conn = self._get_conn()
             cursor = conn.cursor()
-            
-            # Gunakan bulk insert (executemany) agar super cepat dan 
-            # tidak mengunci (lock) database terlalu lama
             records = [(u, source) for u in valid_urls]
             try:
                 cursor.executemany("INSERT OR IGNORE INTO queue (url, source) VALUES (?, ?)", records)
                 added_count = cursor.rowcount
-            except Exception as e:
+            except Exception:
                 added_count = 0
-                
             conn.commit()
-            conn.close()
             return max(0, added_count)
 
     def get_next_batch(self, limit=10):
         """Mengambil batch URL 'pending' dan menandainya sebagai 'processing'."""
         with self._lock:
-            conn = sqlite3.connect(self.db_path, timeout=30)
+            conn = self._get_conn()
             cursor = conn.cursor()
             cursor.execute("SELECT id, url FROM queue WHERE status = 'pending' LIMIT ?", (limit,))
             rows = cursor.fetchall()
-            
             ids = [r[0] for r in rows]
             if ids:
                 cursor.execute(f"UPDATE queue SET status = 'processing' WHERE id IN ({','.join(['?']*len(ids))})", ids)
-            
             conn.commit()
-            conn.close()
             return [r[1] for r in rows]
 
     def mark_completed(self, url):
@@ -80,30 +81,27 @@ class DatabaseManager:
         import hashlib
         url_hash = hashlib.md5(url.encode()).hexdigest()
         with self._lock:
-            conn = sqlite3.connect(self.db_path, timeout=30)
+            conn = self._get_conn()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM queue WHERE url = ?", (url,))
             cursor.execute("INSERT OR IGNORE INTO visited (url_hash, url) VALUES (?, ?)", (url_hash, url))
             conn.commit()
-            conn.close()
 
     def mark_failed(self, url):
         with self._lock:
-            conn = sqlite3.connect(self.db_path, timeout=30)
+            conn = self._get_conn()
             cursor = conn.cursor()
             cursor.execute("UPDATE queue SET status = 'failed' WHERE url = ?", (url,))
             conn.commit()
-            conn.close()
 
     def get_stats(self):
         with self._lock:
-            conn = sqlite3.connect(self.db_path, timeout=30)
+            conn = self._get_conn()
             cursor = conn.cursor()
             cursor.execute("SELECT status, COUNT(*) FROM queue GROUP BY status")
             queue_stats = dict(cursor.fetchall())
             cursor.execute("SELECT COUNT(*) FROM visited")
             visited_count = cursor.fetchone()[0]
-            conn.close()
             return {
                 "pending": queue_stats.get("pending", 0),
                 "processing": queue_stats.get("processing", 0),

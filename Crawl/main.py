@@ -66,8 +66,7 @@ class WebCrawlerAI:
         # Penulisan ke disk memakai FileLock (aman lintas proses).
         self._visited_lock = threading.Lock()
 
-        self.visited_urls  = self._load_visited()
-        self.content_hashes = set()
+        self.content_hashes = self._load_content_hashes()
 
         # ── Konfigurasi domain & keyword ────────────────────────────────────
         self.blocked_domains   = self._load_list(os.path.join(SCRIPT_DIR, "config", "blocked_domain.txt"))
@@ -114,17 +113,28 @@ class WebCrawlerAI:
         keyword_file = os.path.join(SCRIPT_DIR, "config", "keyword.txt")
         return self._load_list(keyword_file)
 
-    def _load_visited(self):
-        """Baca visited_urls.txt pakai FileLocker agar aman saat multi-instans startup bersamaan."""
-        # This method is no longer used for tracking visited URLs in the new architecture
-        # but kept for compatibility if other parts of the code still reference it.
-        # The actual visited status is now managed by DatabaseManager.
-        return set()
+    def _load_content_hashes(self):
+        """Load content hashes dari file agar deduplikasi tetap berjalan setelah restart."""
+        hash_file = os.path.join(SCRIPT_DIR, "data", "content_hashes.txt")
+        hashes = set()
+        if os.path.exists(hash_file):
+            try:
+                with open(hash_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        h = line.strip()
+                        if h:
+                            hashes.add(h)
+            except Exception as e:
+                print(f"[!] Gagal load content hashes: {e}")
+        return hashes
 
-    def _save_visited(self, url):
-        """Simpan URL ke disk menggunakan FileLock (aman lintas proses)."""
-        # This method is no longer used in the new architecture.
-        pass
+    def _save_content_hash(self, content_hash):
+        """Append content hash baru ke file (aman dengan write_lock)."""
+        hash_file = os.path.join(SCRIPT_DIR, "data", "content_hashes.txt")
+        os.makedirs(os.path.join(SCRIPT_DIR, "data"), exist_ok=True)
+        with self._write_lock:
+            with open(hash_file, 'a', encoding='utf-8') as f:
+                f.write(content_hash + "\n")
 
     def _get_hash(self, text):
         return hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -305,13 +315,6 @@ class WebCrawlerAI:
 
         try:
             print(f"[→] Fetching: {url}")
-            
-            # Coba lewat Cloudflare jika tersedia
-            if CF_ACCOUNT_ID and CF_API_TOKEN:
-                # Untuk saat ini kita cetak saja log-nya, fetch asli tetap jalan
-                # sebagai backup sampai polling diimplementasikan jika perlu.
-                self._fetch_via_cloudflare(url)
-
             response = requests.get(url, headers=headers, timeout=20, verify=False)
             response.raise_for_status()
             content_type = response.headers.get('Content-Type', '').lower()
@@ -368,7 +371,7 @@ class WebCrawlerAI:
                                     # Filter 2: URL harus mengandung kata kunci kemiskinan/bantuan
                                     # ATAU berasal dari root domain khusus BPS/Kemensos tempat kumpulan data berada
                                     if any(kw in path_lower for kw in spider_keywords) or any(x in domain for x in ['bps.go.id', 'kemensos.go.id']):
-                                        new_links.append(abs_url) if isinstance(new_links, list) else new_links.add(abs_url)
+                                        new_links.add(abs_url)
                     
                     if new_links:
                         # db.add_urls otomatis mengabaikan URL duplikat
@@ -401,19 +404,16 @@ class WebCrawlerAI:
                 if self.notifier: self.notifier.on_skipped("Not Relevant", url)
                 return None
 
-            # 5. Cek duplikasi konten (thread-safe)
+            # 5. Cek duplikasi konten (thread-safe) — persistent antar restart
             content_hash = self._get_hash(text_content)
             with self._hash_lock:
                 if content_hash in self.content_hashes:
                     if self.notifier: self.notifier.on_skipped("Duplicate", url)
                     return None
                 self.content_hashes.add(content_hash)
+            self._save_content_hash(content_hash)
 
-            # 6. Tandai visited (thread-safe)
-            # This is now handled by DatabaseManager.mark_completed/failed
-            # with self._visited_lock:
-            #     self.visited_urls.add(url)
-            # self._save_visited(url)
+            # 6. Status visited dihandle oleh DatabaseManager.mark_completed/failed
 
             # 7. Hitung Skor Kualitas
             quality     = self.get_quality_score(text_content, url)
