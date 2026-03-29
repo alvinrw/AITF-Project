@@ -46,7 +46,7 @@ if __name__ == "__main__":
     importer = URLImporter()
     
     # Load keywords
-    keyword_file = os.path.join(os.path.dirname(__file__), "config", "keyword.txt")
+    keyword_file = os.path.join(os.path.dirname(__file__), "config", "daftar_keyword.txt")
     keywords = []
     if os.path.exists(keyword_file):
         with open(keyword_file, "r", encoding="utf-8") as f:

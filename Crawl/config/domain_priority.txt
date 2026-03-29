@@ -12,6 +12,14 @@ dtks.kemensos.go.id
 pkh.kemensos.go.id
 djsn.go.id
 tnp2k.go.id
+bappenas.go.id
+kemenkeu.go.id
+djpb.kemenkeu.go.id
+setkab.go.id
+setneg.go.id
+data.go.id
+kominfo.go.id
+jdih.kemensos.go.id
 
 # ===== JURNAL & AKADEMIK INDONESIA =====
 journal.its.ac.id

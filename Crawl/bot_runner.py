@@ -50,6 +50,11 @@ _is_uploading     = False
 _last_upload_time = None                                    # datetime | None
 _next_upload_time = None                                    # datetime | None
 
+# ─── Token Cache ─────────────────────────────────────────────────────────────
+_token_cache_raw = 0
+_token_cache_clean = 0
+_token_cache_time = None
+TOKEN_CACHE_TTL = 300  # 5 menit
 
 # =============================================================================
 # TELEGRAM HELPERS
@@ -108,11 +113,17 @@ def read_last_log(lines=15):
         log_path = LOG_FILE.format(idx)
         if not os.path.exists(log_path):
             continue
-        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
-            all_lines = f.readlines()
-        excerpt = "".join(all_lines[-lines:]).strip()
-        if excerpt:
-            combined.append(f"--- Instans #{idx} ---\n{excerpt}")
+        try:
+            with open(log_path, "rb") as f:
+                f.seek(0, 2)
+                fsize = f.tell()
+                f.seek(max(fsize - 50000, 0), 0)
+                tail_lines = f.read().decode('utf-8', errors='replace').splitlines()
+            excerpt = "\n".join(tail_lines[-lines:]).strip()
+            if excerpt:
+                combined.append(f"--- Instans #{idx} ---\n{excerpt}")
+        except Exception:
+            pass
     return "\n\n".join(combined)[-3000:] if combined else "(log belum ada)"
 
 
@@ -120,29 +131,42 @@ def read_last_log(lines=15):
 # TOKEN ESTIMATOR
 # =============================================================================
 
+def _update_token_estimates():
+    global _token_cache_raw, _token_cache_clean, _token_cache_time
+    now = datetime.now()
+    if _token_cache_time and (now - _token_cache_time).total_seconds() < TOKEN_CACHE_TTL:
+        return _token_cache_raw, _token_cache_clean
+
+    raw_bytes = 0
+    if os.path.exists(DATA_DIR):
+        try:
+            with os.scandir(DATA_DIR) as entries:
+                for entry in entries:
+                    if entry.is_file() and (entry.name.endswith(".md") or entry.name.endswith(".json")):
+                        raw_bytes += entry.stat().st_size
+        except OSError:
+            pass
+
+    clean_bytes = 0
+    clean_file = os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl")
+    if os.path.exists(clean_file):
+        try:
+            clean_bytes = os.path.getsize(clean_file)
+        except OSError:
+            pass
+
+    _token_cache_raw = int(raw_bytes / 3.7)
+    _token_cache_clean = int(clean_bytes / 3.7)
+    _token_cache_time = now
+    return _token_cache_raw, _token_cache_clean
+
 def estimate_tokens():
-    """Estimasi cepat jumlah token dari semua file di data_raw/ (RAW)."""
-    if not os.path.exists(DATA_DIR):
-        return 0
-    total_bytes = 0
-    for fname in os.listdir(DATA_DIR):
-        if fname.endswith(".md") or fname.endswith(".json"):
-            try:
-                total_bytes += os.path.getsize(os.path.join(DATA_DIR, fname))
-            except OSError:
-                pass
-    return int(total_bytes / 3.7)
+    raw, _ = _update_token_estimates()
+    return raw
 
 def estimate_clean_tokens():
-    """Estimasi cepat jumlah token dari data_training_cpt.jsonl (CLEAN)."""
-    clean_file = os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl")
-    if not os.path.exists(clean_file):
-        return 0
-    try:
-        total_bytes = os.path.getsize(clean_file)
-        return int(total_bytes / 3.7)
-    except OSError:
-        return 0
+    _, clean = _update_token_estimates()
+    return clean
 
 
 # =============================================================================

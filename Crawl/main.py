@@ -59,14 +59,11 @@ class WebCrawlerAI:
         self.keywords = keywords or self._load_keywords()
 
         # ── Shared state (thread-safe) ─────────────────────────────────────
-        self._hash_lock    = threading.Lock()
         self._write_lock   = threading.Lock()
         self._ddg_lock     = threading.Lock()   # satu search DuckDuckGo dalam satu waktu
         # _visited_lock hanya dipakai untuk in-memory set di proses ini.
         # Penulisan ke disk memakai FileLock (aman lintas proses).
         self._visited_lock = threading.Lock()
-
-        self.content_hashes = self._load_content_hashes()
 
         # ── Konfigurasi domain & keyword ────────────────────────────────────
         self.blocked_domains   = self._load_list(os.path.join(SCRIPT_DIR, "config", "blocked_domain.txt"))
@@ -112,29 +109,6 @@ class WebCrawlerAI:
         """Load keywords from keyword.txt."""
         keyword_file = os.path.join(SCRIPT_DIR, "config", "keyword.txt")
         return self._load_list(keyword_file)
-
-    def _load_content_hashes(self):
-        """Load content hashes dari file agar deduplikasi tetap berjalan setelah restart."""
-        hash_file = os.path.join(SCRIPT_DIR, "data", "content_hashes.txt")
-        hashes = set()
-        if os.path.exists(hash_file):
-            try:
-                with open(hash_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        h = line.strip()
-                        if h:
-                            hashes.add(h)
-            except Exception as e:
-                print(f"[!] Gagal load content hashes: {e}")
-        return hashes
-
-    def _save_content_hash(self, content_hash):
-        """Append content hash baru ke file (aman dengan write_lock)."""
-        hash_file = os.path.join(SCRIPT_DIR, "data", "content_hashes.txt")
-        os.makedirs(os.path.join(SCRIPT_DIR, "data"), exist_ok=True)
-        with self._write_lock:
-            with open(hash_file, 'a', encoding='utf-8') as f:
-                f.write(content_hash + "\n")
 
     def _get_hash(self, text):
         return hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -344,8 +318,8 @@ class WebCrawlerAI:
                 try:
                     from urllib.parse import urljoin, urlparse
                     
-                    # Daftar domain/ekstensi yang diperbolehkan agar tidak nyasar ke web sampah/judi
-                    allowed_domains = ('.go.id', '.ac.id', '.sch.id', 'bps.go.id', 'kemensos.go.id', 'jatimprov.go.id', 'kominfo.go.id', 'antaranews.com', 'kompas.com', 'detik.com')
+                    # Daftar domain/ekstensi yang diperbolehkan didapat dari prioritas config + go.id
+                    allowed_domains = tuple(set(self.priority_domains + ['.go.id', '.ac.id', '.sch.id']))
                     
                     # Keyword Wajib di URL (Spider hanya merayap ke halaman yang URL-nya mengandung kata ini)
                     spider_keywords = (
@@ -404,14 +378,11 @@ class WebCrawlerAI:
                 if self.notifier: self.notifier.on_skipped("Not Relevant", url)
                 return None
 
-            # 5. Cek duplikasi konten (thread-safe) — persistent antar restart
+            # 5. Cek duplikasi konten (thread-safe & persistent via SQLite DB)
             content_hash = self._get_hash(text_content)
-            with self._hash_lock:
-                if content_hash in self.content_hashes:
-                    if self.notifier: self.notifier.on_skipped("Duplicate", url)
-                    return None
-                self.content_hashes.add(content_hash)
-            self._save_content_hash(content_hash)
+            if not self.db.check_and_add_content_hash(content_hash):
+                if self.notifier: self.notifier.on_skipped("Duplicate Content", url)
+                return None
 
             # 6. Status visited dihandle oleh DatabaseManager.mark_completed/failed
 
@@ -435,6 +406,14 @@ class WebCrawlerAI:
         except requests.exceptions.Timeout:
             print(f"[!] Timeout: {url}")
             if self.notifier: self.notifier.on_error(url, "Timeout")
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code in (401, 403, 503) and CF_API_TOKEN:
+                print(f"[🔄] Trigger Cloudflare Fallback for: {url}")
+                job, _, ok = self._fetch_via_cloudflare(url)
+                if ok:
+                    return True  # Job CF berhasil disubmit, mark completed
+            print(f"[!] HTTP Error {url}: {e}")
+            if self.notifier: self.notifier.on_error(url, str(e))
         except Exception as e:
             print(f"[!] Error {url}: {e}")
             if self.notifier: self.notifier.on_error(url, str(e))
@@ -468,7 +447,7 @@ class WebCrawlerAI:
         
         while True:
             # Ambil batch URL dari database
-            batch_size = config.NUM_CRAWL_WORKERS * 5
+            batch_size = config.NUM_CRAWL_WORKERS * 20
             urls = self.db.get_next_batch(limit=batch_size)
             
             if not urls:

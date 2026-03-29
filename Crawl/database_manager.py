@@ -43,6 +43,13 @@ class DatabaseManager:
                     visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            # Tabel Content Hashes (deduplikasi konten lintas proses, WAL-safe)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS content_hashes (
+                    hash TEXT PRIMARY KEY,
+                    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
             conn.commit()
 
     def add_urls(self, urls, source="unknown"):
@@ -55,13 +62,17 @@ class DatabaseManager:
             conn = self._get_conn()
             cursor = conn.cursor()
             records = [(u, source) for u in valid_urls]
+            # Hitung before/after untuk rowcount yang akurat (executemany rowcount tidak reliable)
+            cursor.execute("SELECT COUNT(*) FROM queue")
+            before = cursor.fetchone()[0]
             try:
                 cursor.executemany("INSERT OR IGNORE INTO queue (url, source) VALUES (?, ?)", records)
-                added_count = cursor.rowcount
             except Exception:
-                added_count = 0
+                pass
+            cursor.execute("SELECT COUNT(*) FROM queue")
+            after = cursor.fetchone()[0]
             conn.commit()
-            return max(0, added_count)
+            return max(0, after - before)
 
     def get_next_batch(self, limit=10):
         """Mengambil batch URL 'pending' dan menandainya sebagai 'processing'."""
@@ -93,6 +104,19 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("UPDATE queue SET status = 'failed' WHERE url = ?", (url,))
             conn.commit()
+
+    def check_and_add_content_hash(self, content_hash):
+        """Cek apakah hash konten sudah ada. Jika belum, tambahkan.
+        Returns True jika BARU, False jika duplikat. Thread & proses safe via SQLite WAL."""
+        with self._lock:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR IGNORE INTO content_hashes (hash) VALUES (?)",
+                (content_hash,)
+            )
+            conn.commit()
+            return cursor.rowcount > 0  # 1 = baru, 0 = duplikat
 
     def get_stats(self):
         with self._lock:
