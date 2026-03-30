@@ -266,6 +266,20 @@ def _do_upload_job():
             cleaner.process_all()
         except Exception as e:
             send(f"⚠️ Gagal menjalankan DataCleaner: {e}")
+
+        # 0b. Jalankan Wikipedia Data Mixing (mencegah catastrophic forgetting)
+        send("🌐 Menyuntikkan data Wikipedia Indonesia (General Knowledge)...")
+        wiki_file = os.path.join(SCRIPT_DIR, "data", "wikipedia_subset.jsonl")
+        try:
+            from mix_general_data import mix_wikipedia_data
+            mix_wikipedia_data(
+                input_file=os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl"),
+                output_file=os.path.join(SCRIPT_DIR, "data", "data_training_mixed.jsonl"),
+                wiki_output_file=wiki_file,
+                num_wiki_samples=5000
+            )
+        except Exception as e:
+            send(f"⚠️ Gagal melakukan Data Mixing: {e}")
             
         # 1. Jalankan Upload
         try:
@@ -286,7 +300,7 @@ def _do_upload_job():
 
         upload_data_raw(
             folder_path=DATA_DIR,
-            clean_file=os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl"),
+            clean_file=os.path.join(SCRIPT_DIR, "data", "data_training_mixed.jsonl"),
             notifier=_SimpleNotifier()
         )
         
@@ -296,7 +310,8 @@ def _do_upload_job():
             upload_to_huggingface(
                 repo_id="alvinrifky/Crawling-MKN_1",
                 folder_raw=DATA_DIR,
-                clean_file=os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl"),
+                clean_file=os.path.join(SCRIPT_DIR, "data", "data_training_mixed.jsonl"),
+                wikipedia_file=os.path.join(SCRIPT_DIR, "data", "wikipedia_subset.jsonl"),
                 notifier=_SimpleNotifier()
             )
         except Exception as e:

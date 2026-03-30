@@ -12,5 +12,6 @@ google-auth
 google-auth-httplib2
 google-auth-oauthlib
 
-# ── HuggingFace upload ────────────────────────────────────────────────────────
+# ── HuggingFace upload & Data Mixing ──────────────────────────────────────────
 huggingface-hub
+datasets
