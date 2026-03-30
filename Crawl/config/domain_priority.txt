@@ -20,6 +20,21 @@ setneg.go.id
 data.go.id
 kominfo.go.id
 jdih.kemensos.go.id
+jatimprov.go.id
+malangkab.go.id
+surabaya.go.id
+jember.go.id
+bangkalankab.go.id
+sampangkab.go.id
+sumenepkab.go.id
+bondowoso.go.id
+situbondokab.go.id
+kemendes.go.id
+p3ke.kemenkopmk.go.id
+satudata.go.id
+sp2010.bps.go.id
+sensus.bps.go.id
+susenas.bps.go.id
 
 # ===== JURNAL & AKADEMIK INDONESIA =====
 journal.its.ac.id
@@ -31,9 +46,21 @@ ejournal.ipdn.ac.id
 ejournal.unesa.ac.id
 journal.ugm.ac.id
 jurnal.ugm.ac.id
+smeru.or.id 
+fiskal.kemenkeu.go.id
 
 # ===== BERITA RESMI JAWA TIMUR =====
 jatim.antaranews.com
 beritajatim.com
 radarsurabaya.jawapos.com
 surabaya.tribunnews.com
+kompas.com
+tempo.co
+katadata.co.id          # ⭐ bagus untuk data ekonomi
+databoks.katadata.co.id # ⭐ visualisasi statistik
+bisnis.com
+cnbcindonesia.com
+ekonomi.bisnis.com
+wartaekonomi.co.id
+medcom.id
+jpnn.com
