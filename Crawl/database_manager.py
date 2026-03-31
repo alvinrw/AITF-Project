@@ -105,6 +105,16 @@ class DatabaseManager:
             cursor.execute("UPDATE queue SET status = 'failed' WHERE url = ?", (url,))
             conn.commit()
 
+    def reset_stale_tasks(self):
+        """Mengembalikan semua URL dengan status 'processing' kembali ke 'pending'."""
+        with self._lock:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE queue SET status = 'pending' WHERE status = 'processing'")
+            affected = cursor.rowcount
+            conn.commit()
+            return affected
+
     def check_and_add_content_hash(self, content_hash):
         """Cek apakah hash konten sudah ada. Jika belum, tambahkan.
         Returns True jika BARU, False jika duplikat. Thread & proses safe via SQLite WAL."""

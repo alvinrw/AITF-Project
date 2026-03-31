@@ -357,6 +357,11 @@ def start_crawler():
         if still_running:
             return False, "Sistem sudah berjalan!"
 
+        # 0. Bersihkan URL yang nyangkut di status 'processing' (Stale Recovery)
+        recovered = db_manager.reset_stale_tasks()
+        if recovered > 0:
+            print(f"[*] Stale Recovery: Mereset {recovered} URL yang nyangkut dari sesi sebelumnya.")
+
         # 1. Start AITF Engine (Binary) - SEKARANG MENGGUNAKAN LISENSI RESMI
         if os.name == 'nt':
             engine_bin = os.path.join(SCRIPT_DIR, "crawler-engine", "Windows", "aitf-engine.exe")
@@ -516,6 +521,11 @@ def handle_command(text):
         # Upload on-demand (tidak tunggu jadwal 3 jam)
         trigger_upload(reason="perintah manual /upload")
 
+    elif cmd == "/repair":
+        # Reset URL nyangkut secara manual
+        count = db_manager.reset_stale_tasks()
+        send(f"🛠️ <b>Repair Sukses!</b>\nBerhasil menarik balik {count} URL yang nyangkut ke antrean pending.")
+
     elif cmd == "/help":
         send(
             "📖 <b>Perintah Bot Crawler</b>\n\n"
@@ -524,6 +534,7 @@ def handle_command(text):
             "/status — Lihat status crawler + info upload Drive\n"
             "/log    — Lihat log terbaru\n"
             f"/upload — Upload data_raw ke Drive <i>sekarang</i> (tanpa tunggu jadwal {UPLOAD_INTERVAL_HOURS} jam)\n"
+            "/repair — Ambil balik URL yang nyangkut di proses\n"
             "/help   — Tampilkan bantuan ini"
         )
     else:
