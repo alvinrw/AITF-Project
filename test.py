@@ -14,7 +14,7 @@ chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-SAVE_FOLDER = "bps_pdfs"
+SAVE_FOLDER = "PDF"
 os.makedirs(SAVE_FOLDER, exist_ok=True)
 
 def download_pdf(session, url, filename):
@@ -37,39 +37,77 @@ def download_pdf(session, url, filename):
 # Buat session requests
 s = requests.Session()
 
-# Mulai Crawling
-for page in range(1, 134):
-    url = f"https://jatim.bps.go.id/id/publication?page={page}"
-    print(f"\n[📄] Memproses Halaman {page}...")
-    
-    driver.get(url)
-    time.sleep(5) # Kasih waktu Cloudflare buat 'tenang'
-    
-    # Ambil cookies dari Selenium masukin ke Requests
-    for cookie in driver.get_cookies():
-        s.cookies.set(cookie['name'], cookie['value'])
+# =============================================================================
+# KONFIGURASI TARGET
+# =============================================================================
+# TARGET = "BPS_JATIM"
+TARGET = "THE_PRAKARSA"
 
-    # Cari kartu publikasi
-    cards = driver.find_elements(By.CSS_SELECTOR, "a[href*='/publication/']")
-    links = list(set([c.get_attribute("href") for c in cards]))
+if TARGET == "BPS_JATIM":
+    # Mulai Crawling BPS
+    for page in range(1, 134):
+        url = f"https://jatim.bps.go.id/id/publication?page={page}"
+        print(f"\n[📄] Memproses Halaman BPS {page}...")
+        driver.get(url)
+        time.sleep(5)
+        for cookie in driver.get_cookies():
+            s.cookies.set(cookie['name'], cookie['value'])
+        cards = driver.find_elements(By.CSS_SELECTOR, "a[href*='/publication/']")
+        links = list(set([c.get_attribute("href") for c in cards]))
+        for link in links:
+            try:
+                driver.get(link)
+                time.sleep(3)
+                title = driver.find_element(By.TAG_NAME, "h1").text.strip()
+                pdf_button = driver.find_element(By.XPATH, "//a[contains(@href,'download.php')]")
+                pdf_link = pdf_button.get_attribute("href")
+                filename = f"{title[:50]}.pdf"
+                download_pdf(s, pdf_link, filename)
+            except Exception as e:
+                print(f"  [⚠️] Skip: {e}")
 
-    for link in links:
-        try:
-            print(f"  [→] Mengintip: {link}")
-            driver.get(link)
-            time.sleep(3)
+elif TARGET == "THE_PRAKARSA":
+    # Mulai Crawling The Prakarsa
+    for page in range(1, 10): # Sesuaikan jumlah halaman jika perlu
+        url = f"https://theprakarsa.org/ikm/publikasi/page/{page}/"
+        print(f"\n[📄] Memproses Halaman Prakarsa {page}...")
+        
+        driver.get(url)
+        time.sleep(3)
 
-            # Ambil judul buat nama file
-            title = driver.find_element(By.TAG_NAME, "h1").text.strip()
-            
-            # Cari tombol download
-            pdf_button = driver.find_element(By.XPATH, "//a[contains(@href,'download.php')]")
-            pdf_link = pdf_button.get_attribute("href")
+        # Cari kartu publikasi (pake link wrappernya)
+        cards = driver.find_elements(By.CSS_SELECTOR, "a.fusion-link-wrapper")
+        links = list(set([c.get_attribute("href") for c in cards]))
 
-            filename = f"{title[:50]}.pdf"
-            download_pdf(s, pdf_link, filename)
+        if not links:
+            print("  [!] Tidak ada link lagi, berhenti.")
+            break
 
-        except Exception as e:
-            print(f"  [⚠️] Skip: Tombol download nggak ketemu atau error: {e}")
+        for link in links:
+            try:
+                print(f"  [→] Mengintip: {link}")
+                driver.get(link)
+                time.sleep(2)
+
+                # Ambil judul
+                title = driver.find_element(By.TAG_NAME, "h1").text.strip()
+                
+                # Cari tombol download (biasanya a.fusion-button)
+                buttons = driver.find_elements(By.CSS_SELECTOR, "a.fusion-button")
+                
+                pdf_count = 0
+                for btn in buttons:
+                    pdf_link = btn.get_attribute("href")
+                    if pdf_link and ".pdf" in pdf_link.lower():
+                        btn_text = btn.text.strip().replace("\n", " ")
+                        filename = f"{title[:50]}_{btn_text[:20]}.pdf"
+                        download_pdf(s, pdf_link, filename)
+                        pdf_count += 1
+                
+                if pdf_count == 0:
+                    print(f"  [⚠️] Tidak ada PDF di halaman ini.")
+
+            except Exception as e:
+                print(f"  [⚠️] Skip {link}: {e}")
 
 driver.quit()
