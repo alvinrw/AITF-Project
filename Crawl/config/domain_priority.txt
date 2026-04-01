@@ -15,6 +15,8 @@ tnp2k.go.id
 bappenas.go.id
 kemenkeu.go.id
 djpb.kemenkeu.go.id
+bi.go.id
+brin.go.id
 setkab.go.id
 setneg.go.id
 data.go.id

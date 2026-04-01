@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import hashlib
 
 
 class DataCleaner:
@@ -162,6 +163,8 @@ class DataCleaner:
         saved            = 0
         skipped_garbage  = 0
         skipped_short    = 0
+        skipped_duplicate = 0
+        seen_hashes      = set()
 
         with open(self.output_file, 'w', encoding='utf-8') as outfile:
             for filename in all_files:
@@ -200,6 +203,17 @@ class DataCleaner:
 
                 clean_content = self.clean_text(raw_content)
 
+                # ── GLOBAL DEDUPLICATION (Sidik Jari Konten) ──────────────────
+                # Gunakan hash MD5 dari konten yang sudah bersih
+                content_fingerprint = hashlib.md5(clean_content.lower().strip().encode()).hexdigest()
+                
+                if content_fingerprint in seen_hashes:
+                    print(f"[✗] SKIP (DUPLIKAT): {title[:55]}")
+                    skipped_duplicate += 1
+                    continue
+                
+                seen_hashes.add(content_fingerprint)
+
                 if len(clean_content) > 350:
                     formatted_text = f"Judul: {title}. Isi: {clean_content}"
                     entry = {
@@ -216,9 +230,17 @@ class DataCleaner:
 
         print(f"\n{'=' * 55}")
         print(f"[DONE] Saved          : {saved} dokumen")
+        print(f"[DONE] Skip duplikat  : {skipped_duplicate} dokumen")
         print(f"[DONE] Skip garbage   : {skipped_garbage} file")
         print(f"[DONE] Skip pendek    : {skipped_short} file")
         print(f"[DONE] Output         : {self.output_file}")
+
+        return {
+            "saved":     saved,
+            "duplicate": skipped_duplicate,
+            "garbage":   skipped_garbage,
+            "short":     skipped_short
+        }
 
 
 if __name__ == "__main__":

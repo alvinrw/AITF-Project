@@ -1,15 +1,3 @@
-"""
-bot_runner.py — Bot daemon yang jalan mandiri di server.
-Jalankan: python bot_runner.py
-
-Perintah dari Telegram:
-  /run    → Mulai crawler (N instans paralel)
-  /stop   → Hentikan semua instans crawler
-  /status → Lihat progress gabungan + info upload
-  /log    → Lihat log gabungan dari semua instans
-  /upload → Upload data_raw ke Drive sekarang (tanpa tunggu jadwal)
-"""
-
 import requests
 import subprocess
 import threading
@@ -41,6 +29,7 @@ last_update_id = 0
 proc_lock     = threading.Lock()
 engine_proc   = None  # Binary aitf-engine
 importer_proc = None  # python url_importer.py
+pdf_extractor_proc = None # python pdf_extractor.py
 db_manager    = DatabaseManager()
 
 # ─── Upload State ────────────────────────────────────────────────────────────
@@ -51,8 +40,12 @@ _last_upload_time = None                                    # datetime | None
 _next_upload_time = None                                    # datetime | None
 
 # ─── Token Cache ─────────────────────────────────────────────────────────────
-_token_cache_raw = 0
-_token_cache_clean = 0
+_token_cache = {
+    "total": {"raw": 0, "clean": 0},
+    "wiki": {"raw": 0, "clean": 0},
+    "pdf": {"raw": 0, "clean": 0},
+    "web": {"raw": 0, "clean": 0}
+}
 _token_cache_time = None
 TOKEN_CACHE_TTL = 300  # 5 menit
 
@@ -132,20 +125,36 @@ def read_last_log(lines=15):
 # =============================================================================
 
 def _update_token_estimates():
-    global _token_cache_raw, _token_cache_clean, _token_cache_time
+    global _token_cache, _token_cache_time
     now = datetime.now()
     if _token_cache_time and (now - _token_cache_time).total_seconds() < TOKEN_CACHE_TTL:
-        return _token_cache_raw, _token_cache_clean
+        return _token_cache
 
-    raw_bytes = 0
+    pdf_bytes = 0
+    wiki_bytes = 0
+    web_bytes = 0
+
     if os.path.exists(DATA_DIR):
         try:
             with os.scandir(DATA_DIR) as entries:
                 for entry in entries:
-                    if entry.is_file() and (entry.name.endswith(".md") or entry.name.endswith(".json")):
-                        raw_bytes += entry.stat().st_size
+                    if entry.is_file() and (entry.name.endswith(".md") or entry.name.endswith(".json") or entry.name.endswith(".jsonl")):
+                        size = entry.stat().st_size
+                        if entry.name == "pdf_extract.jsonl":
+                            pdf_bytes += size
+                        else:
+                            web_bytes += size
         except OSError:
             pass
+
+    wiki_file = os.path.join(SCRIPT_DIR, "data", "wikipedia_subset.jsonl")
+    if os.path.exists(wiki_file):
+        try:
+            wiki_bytes += os.path.getsize(wiki_file)
+        except OSError:
+            pass
+
+    total_raw_bytes = web_bytes + pdf_bytes + wiki_bytes
 
     clean_bytes = 0
     clean_file = os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl")
@@ -155,18 +164,33 @@ def _update_token_estimates():
         except OSError:
             pass
 
-    _token_cache_raw = int(raw_bytes / 3.7)
-    _token_cache_clean = int(clean_bytes / 3.7)
+    total_raw_tokens = int(total_raw_bytes / 3.7)
+    total_clean_tokens = int(clean_bytes / 3.7)
+
+    if total_raw_bytes > 0:
+        wiki_ratio = wiki_bytes / total_raw_bytes
+        pdf_ratio = pdf_bytes / total_raw_bytes
+        web_ratio = web_bytes / total_raw_bytes
+    else:
+        wiki_ratio = pdf_ratio = web_ratio = 0
+
+    _token_cache = {
+        "total": {"raw": total_raw_tokens, "clean": total_clean_tokens},
+        "wiki": {"raw": int(wiki_bytes / 3.7), "clean": int(total_clean_tokens * wiki_ratio)},
+        "pdf": {"raw": int(pdf_bytes / 3.7), "clean": int(total_clean_tokens * pdf_ratio)},
+        "web": {"raw": int(web_bytes / 3.7), "clean": int(total_clean_tokens * web_ratio)}
+    }
+    
     _token_cache_time = now
-    return _token_cache_raw, _token_cache_clean
+    return _token_cache
 
 def estimate_tokens():
-    raw, _ = _update_token_estimates()
-    return raw
+    cache = _update_token_estimates()
+    return cache["total"]["raw"]
 
 def estimate_clean_tokens():
-    _, clean = _update_token_estimates()
-    return clean
+    cache = _update_token_estimates()
+    return cache["total"]["clean"]
 
 
 # =============================================================================
@@ -181,11 +205,11 @@ def build_status():
 
     n_active = len(active)
     if n_active == 0:
-        state = "🔴 BERHENTI"
+        state = "🔴 Berhenti"
     elif n_active < NUM_INSTANCES:
-        state = f"🟡 SEBAGIAN ({n_active}/{NUM_INSTANCES} berjalan)"
+        state = f"🟡 Sebagian ({n_active}/{NUM_INSTANCES} instans)"
     else:
-        state = f"🟢 BERJALAN ({n_active}/{NUM_INSTANCES} instans)"
+        state = f"🟢 Aktif ({n_active}/{NUM_INSTANCES} instans)"
 
     pid_list = ", ".join(str(p.pid) for _, p in active) if active else "-"
 
@@ -193,50 +217,56 @@ def build_status():
     saved = 0
     if os.path.exists(DATA_DIR):
         saved = len([f for f in os.listdir(DATA_DIR)
-                     if f.endswith(".md") or f.endswith(".json")])
+                     if f.endswith(".md") or f.endswith(".json") or f.endswith(".jsonl")])
 
-    # (visited_urls.txt sudah usang, kita gunakan statistik SQLite)
-
-    # Statistik SQLite
     db_stats = db_manager.get_stats()
     
-    # Info upload
     last_up = _last_upload_time.strftime("%d %b %Y %H:%M") if _last_upload_time else "-"
     next_up = _next_upload_time.strftime("%d %b %Y %H:%M") if _next_upload_time else "-"
-    up_status = "⏳ Sedang upload…" if _is_uploading else f"⏰ Berikutnya: {next_up}"
+    up_status = "Sedang Upload…" if _is_uploading else f"Berikutnya: {next_up}"
 
-    # Estimasi token (cepat, berbasis ukuran file)
-    token_est_raw = estimate_tokens()
-    token_est_clean = estimate_clean_tokens()
-    
-    t_raw_str = f"~{token_est_raw / 1_000_000:.2f}M" if token_est_raw >= 1_000_000 else f"~{token_est_raw / 1_000:.1f}K"
-    t_clean_str = f"~{token_est_clean / 1_000_000:.2f}M" if token_est_clean >= 1_000_000 else f"~{token_est_clean / 1_000:.1f}K"
+    tc = _update_token_estimates()
+    def fmt_t(num):
+        return f"~{num / 1_000_000:.2f}M" if num >= 1_000_000 else f"~{num / 1_000:.1f}K"
 
-    # Cek status Engine & Importer
-    global engine_proc, importer_proc
-    engine_status = "🟢 Jalan" if (engine_proc and engine_proc.poll() is None) else "🔴 Berhenti"
-    importer_status = "🟢 Jalan" if (importer_proc and importer_proc.poll() is None) else "🔴 Berhenti"
+    global engine_proc, importer_proc, pdf_extractor_proc
+    engine_status = "🟢 Berjalan" if (engine_proc and engine_proc.poll() is None) else "🔴 Berhenti"
+    importer_status = "🟢 Berjalan" if (importer_proc and importer_proc.poll() is None) else "🔴 Berhenti"
+    pdf_ex_status = "🟢 Berjalan" if (pdf_extractor_proc and pdf_extractor_proc.poll() is None) else "🔴 Berhenti"
 
     return (
-        f"📊 <b>Status Super-Crawler (Hybrid)</b>\n"
-        f"🤖 Spider Engine : {engine_status}\n"
-        f"🌉 URL Importer  : {importer_status}\n"
-        f"👷 Worker Python : {state}\n"
-        f"Worker PID : {pid_list}\n\n"
-        f"🗄️ <b>Database URL (Anti-Duplikat)</b>\n"
-        f"⏳ Pending    : {db_stats['pending']} (Menunggu Worker)\n"
-        f"⚙️ Processing : {db_stats['processing']} (Sedang Dikerjakan)\n"
-        f"✅ Completed  : {db_stats['visited']} (Sukses Tersimpan)\n"
-        f"❌ Failed     : {db_stats['failed']} (Error/Dibuang)\n"
-        f"🔗 <b>Total Visited</b>: {db_stats['visited'] + db_stats['failed']} URL\n\n"
-        f"✅ Dokumen  : {saved} file tersimpan\n"
-        f"🪙 <b>Estimasi Token (Qwen3.5)</b>\n"
-        f"  ├ 🩸 Raw Data  : {t_raw_str}\n"
-        f"  └ ✨ Clean Data: {t_clean_str}\n"
         f"🕐 Waktu: {datetime.now().strftime('%H:%M:%S')}\n\n"
-        f"☁️ <b>Upload Drive</b>\n"
-        f"Terakhir: {last_up}\n"
-        f"{up_status}"
+        f"🤖 <b>Status Super-Crawler (Hybrid)</b>\n\n"
+        f"🤖 Spider Engine : {engine_status}\n"
+        f"🌉 URL Importer : {importer_status}\n"
+        f"📄 PDF Extractor : {pdf_ex_status}\n"
+        f"👷 Worker Python : {state}\n"
+        f"Worker PID: {pid_list}\n\n"
+        f"🗄️ <b>Statistik Database URL (Anti-Duplikat)</b>\n\n"
+        f"⏳ Pending : {db_stats['pending']:,} URL\n"
+        f"⚙️ Processing : {db_stats['processing']:,} URL\n"
+        f"✅ Completed : {db_stats['visited']:,} URL\n"
+        f"❌ Failed : {db_stats['failed']:,} URL\n"
+        f"🔗 Total Visited: {db_stats['visited'] + db_stats['failed']:,} URL\n\n"
+        f"📁 <b>Dokumen Tersimpan</b>\n\n"
+        f"✅ Total File: {saved:,} dokumen\n\n"
+        f"🪙 <b>Estimasi Token (Model: Qwen 3.5)</b>\n\n"
+        f"📊 <b>TOTAL</b>\n\n"
+        f"🩸 Raw Data : {fmt_t(tc['total']['raw'])} token\n"
+        f"✨ Clean Data : {fmt_t(tc['total']['clean'])} token\n\n"
+        f"📂 <b>Breakdown Sumber Data</b>\n\n"
+        f"🌐 <b>Wikipedia</b>\n\n"
+        f"🩸 Raw Data : {fmt_t(tc['wiki']['raw'])} token\n"
+        f"✨ Clean Data : {fmt_t(tc['wiki']['clean'])} token\n\n"
+        f"📄 <b>PDF Extract</b>\n\n"
+        f"🩸 Raw Data : {fmt_t(tc['pdf']['raw'])} token\n"
+        f"✨ Clean Data : {fmt_t(tc['pdf']['clean'])} token\n\n"
+        f"🕷️ <b>Web Crawling (Non-Wikipedia)</b>\n\n"
+        f"🩸 Raw Data : {fmt_t(tc['web']['raw'])} token\n"
+        f"✨ Clean Data : {fmt_t(tc['web']['clean'])} token\n\n"
+        f"☁️ <b>Status Upload Drive</b>\n\n"
+        f"🕐 Terakhir Upload : {last_up}\n"
+        f"⏳ Status : {up_status}"
     )
 
 
@@ -263,7 +293,11 @@ def _do_upload_job():
             cleaner = DataCleaner(
                 output_file=os.path.join(SCRIPT_DIR, "data", "data_training_cpt.jsonl")
             )
-            cleaner.process_all()
+            stats = cleaner.process_all()
+            
+            # Notif hasil pembersihan
+            dup_msg = f" (Dibuang {stats['duplicate']} data kembar)" if stats['duplicate'] > 0 else ""
+            send(f"✅ Pembersihan Selesai: <b>{stats['saved']} Dokumen Unik</b>{dup_msg}")
         except Exception as e:
             send(f"⚠️ Gagal menjalankan DataCleaner: {e}")
 
@@ -402,6 +436,12 @@ def start_crawler():
         importer_proc = subprocess.Popen(["python", importer_script], cwd=SCRIPT_DIR)
         print(f"[*] URL Importer started. PID: {importer_proc.pid}")
 
+        # 2b. Start PDF Extractor
+        global pdf_extractor_proc
+        pdf_script = os.path.join(SCRIPT_DIR, "pdf_extractor.py")
+        pdf_extractor_proc = subprocess.Popen(["python", pdf_script], cwd=SCRIPT_DIR)
+        print(f"[*] PDF Extractor started. PID: {pdf_extractor_proc.pid}")
+
         # 3. Start Consumer Workers
         crawler_procs = []
         for idx in range(1, NUM_INSTANCES + 1):
@@ -450,7 +490,8 @@ def stop_crawler():
             except subprocess.TimeoutExpired:
                 p.kill()
 
-        # Hentikan Engine & Importer (selalu)
+        # Hentikan Engine, Importer, & PDF Extractor (selalu)
+        global pdf_extractor_proc
         if engine_proc:
             try:
                 engine_proc.kill()
@@ -465,6 +506,13 @@ def stop_crawler():
                 pass
             importer_proc = None
 
+        if pdf_extractor_proc:
+            try:
+                pdf_extractor_proc.kill()
+            except Exception:
+                pass
+            pdf_extractor_proc = None
+
         crawler_procs = []
 
     stopped_parts = []
@@ -474,7 +522,7 @@ def stop_crawler():
         stopped_parts.append("Spider Engine")
     if importer_alive:
         stopped_parts.append("URL Importer")
-    return True, f"Dihentikan: {', '.join(stopped_parts)}."
+    return True, f"Dihentikan: {', '.join(stopped_parts)} (termasuk PDF Extractor)."
 
 
 def monitor_crawler():
@@ -557,7 +605,7 @@ def periodic_reporter():
             active = [(i, p) for i, p in crawler_procs if p.poll() is None]
         if active:  # Hanya kirim kalau ada yang jalan
             send(
-                f"⏱ <b>Laporan Berkala ({PERIODIC_REPORT_MINUTES} menit)</b>\n\n"
+                f"📊 <b>Laporan Berkala ({PERIODIC_REPORT_MINUTES} Menit)</b>\n"
                 + build_status()
             )
         time.sleep(PERIODIC_REPORT_MINUTES * 60)
