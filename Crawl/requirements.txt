@@ -1,5 +1,6 @@
 # ── Crawler core ─────────────────────────────────────────────────────────────
 requests
+beautifulsoup4
 selectolax
 urllib3
 duckduckgo-search

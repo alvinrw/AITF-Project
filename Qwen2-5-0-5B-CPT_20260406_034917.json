@@ -1,0 +1,249 @@
+{
+  "model": "Qwen2.5-0.5B-CPT",
+  "summary": {
+    "f1": 0.08203279507062267,
+    "ppl": 15.17959368674417
+  },
+  "per_item": [
+    {
+      "question": "Apa itu Program Keluarga Harapan (PKH)?",
+      "reference": "PKH adalah program pemberian bantuan sosial bersyarat dari Pemerintah yang ditetapkan sebagai keluarga penerima manfaat, ditujukan untuk memutus rantai kemiskinan antar generasi.",
+      "prediction": "Pada tahun 2018, jumlah program keluargamahasiswa yang berikan pendidikan umumnya mencapai 3.574.960 orang, yaitu sekitar 15 persen dari total penduduk umum di Indonesia. Dari data tersebut, diperkirakan jumlah penduduk anak muda yang memiliki pendidikan umum juga mencapai 15 jutaan orang, atau sekitarnya.\nDengan demikronisasi penduduk umum yang cukup besar, maka perlu diketahui bahwa pelayanan dan kesejahteraannya menjadi prioritas utama bagi para mahasiswa yang bekerja sebagai pelanggut. Kebijiankan kebutuhan pokok, pengelolaan sumber daya lingkungan, serta pelestarian hidup adalah prioritas utamanya untuk para mahasiswa. Hal ini menunjukkan bahwa pelayanan sosial yang baik merupakan prioritas utama dalam pembangunan ekonomi negara.",
+      "f1": 0.1176470588235294
+    },
+    {
+      "question": "Apa yang dimaksud dengan indeks SPBE?",
+      "reference": "Indeks Sistem Pemerintahan Berbasis Elektronik (SPBE) adalah ukuran tingkat kematangan pelaksanaan SPBE di instansi pemerintah yang menjamin kualitas pelayanan publik.",
+      "prediction": "Indeks SPBE adalah indikator yang digunakan untuk membedakan kualitas, kekuatan, dan kemampuan ekonomi perusahaan. Kebijian SPBE diperuntukkan pada pengembangan strategi pemasukan modal, peningkatan kapasitas, serta meningkatkan produktivitas perusahaan.\nSumber: BPS\nKunci: 1. Pemilik usaha dapat menetapkan indikator SPBE sesuai dengan kondisi perusahaan; 2. Perusahaan dapat mengatur indikator SPBE sesuai dengan kondisi perusahaan; 3. Sistem informasi perusahaan dapat menggunakan indikator SPBE sebagai standar dalam evaluasi perbaikan sistem manajemen operasional; 4. Sistem informasi perusahaan dapat menggunakan indikator SPBE sebagai standar dalam evaluasi perbaikan sistem manajemen operasional; 5. Sistem informasi perusahaan dapat menggunakan indikator SPBE sebagai standar dalam evaluasi perbaikan sistem manajemen operasional; 6. Sistem informasi perusahaan dapat menggunakan indikator SPBE sebagai standar dalam evaluasi perbaikan sistem manajemen",
+      "f1": 0.10370370370370371
+    },
+    {
+      "question": "Apa definisi kemiskinan ekstrem menurut Badan Pusat Statistik (BPS)?",
+      "reference": "Kemiskinan ekstrem didefinisikan sebagai kondisi di mana pengeluaran per kapita penduduk berada di bawah garis kemiskinan ekstrem atau standar kemiskinan internasional.",
+      "prediction": "Kemiskanan ekstrem adalah kondisi sosial yang tidak sehat, yaitu ketidakseimbangkan kebutuhan dan kesejaan manusia. Kondisi tersebut dapat disebabkan oleh berbagai faktor, termasuk adanya perbedaan pelayanan yang dikelola oleh pemerintah pusat dengan pelayanan yang dikelola oleh masyarakat.\nKemiskanan ekstrem merupakan salah satu bentuk kemiskinan yang sering terjadi di dalamnya, misalnya, ada kasus-kasus kerapasan yang mengakiberasikan dampak negatif pada kelancunan mental, kesulitan pekerjaan, atau bahkan meningkatkan risiko jaringan pandemi covid-19.\nDalam hal ini, pihak pusat juga harus dipengaruhi untuk mencari solusi yang tepat demi memastikan bahwa kondisi tersebut tidak semula menjadi demikian.",
+      "f1": 0.10810810810810811
+    },
+    {
+      "question": "Apa inovasi Pemprov Jatim dalam sektor digitalisasi administrasi pemerintahan berdasarkan data pembangunan Jatim?",
+      "reference": "Pemprov Jatim memiliki inovasi SIESTA (Sistem Informasi Enterprise Soetomo) dan Si-Master untuk layanan administrasi pemerintah yang terintegrasi.",
+      "prediction": "1. Kementerian Sumber Daya Manusia dan Kebakaran (Kemenkam) menyerukan perluasan, peningkatan, dan kreatifnya untuk mendorong pengembangan teknologi informasi yang dapat digunakan oleh seluruh pihal di lingkungan pemerintah pusatu. 2. Dalam hal ini, diperlukan dukungan dari para pejabat pusatu, serta adilannya terhadap kebijakan pemerintah pusatu. 3. Adilannya juga harus dilakukan dengan sinyal yang bersifat kompetitif, yaitu menguntungkan peluang keramaikan bagi pemerintah pusatu. 4. Pengelolaan data yang baik, jujur, dan akurat. 5. Perlu ada strategi yang tepat, yakni strategi yang memadai, strategi yang layar, strategi yang mudik, strategi yang cepat, strategi yang lancip, strategi yang ramah tanggul, strategi yang aman, strategi yang nyaman, strategi yang layar, strategi yang layar, strategi yang",
+      "f1": 0.07936507936507936
+    },
+    {
+      "question": "Program prioritas apa yang berkaitan dengan penurunan angka stunting di Indonesia?",
+      "reference": "Program prioritas intervensi gizi spesifik dan sensitif yang dikoordinasikan antar kementerian/lembaga untuk percepatan penurunan angka stunting hingga target 14 persen.",
+      "prediction": "1. Pemerintah Daerah (KPP) dan Kementerian Sosial, Kesehatan, dan Kependudukan Perwakilan Masyarakat Kepulauan Riau; 2. Dinas Kesejahteraan Umum, KPMB; 3. Dinas Kebangkalian, Bupati; 4. Dinas Kediamanan, KTPM; 5. Dinas Kependudikan, KTPM; 6. Dinas Kependudikan, KTPM; 7. Dinas Kependudikan, KTPM; 8. Dinas Kependudikan, KTPM; 9. Dinas Kependudikan, KTPM; 10. Dinas Kependudikan, KTPM; 11. Dinas Kependudikan, KTPM; 12. Dinas Kependudikan, KTPM; 13. Dinas Kependudikan, KTPM; 14. Dinas Kependudikan, KTPM; 15. Dinas Kependudikan, KTPM; 1",
+      "f1": 0.04347826086956522
+    },
+    {
+      "question": "Apa yang dimaksud dengan Gini rasio (koefisien gini) dalam konteks ketimpangan?",
+      "reference": "Gini rasio adalah ukuran dari ketimpangan distribusi pendapatan dalam suatu daerah. Semakin mendekati 0 berarti distribusi pendapatan semakin merata.",
+      "prediction": "Gini adalah koefisien korelasi antara dua variabel. Kekompresi pada data yang lebih kecil, yaitu nilai 0,15 atau kurang, berarti bahwa kedua variabel memiliki perbedaan yang besar. Jadi, jika Gini positif, maka ada perbedaan yang besar; sedangkan negatif, perbedaan yang rendah.\nGini juga dapat digambarkan melalui persamaan:\nKemiskinannya dihitung dari jumlah penduduk dan jumlah tenaga kerja\nPersentase penghasilan yang diperluaskan sebesar 20 persen\nSumber: Wikipedia\nDengan demikian, Gini bisa ditulis sebagai:\nRata-rata penduduk = 100 x 20 persen = 80\nPersentase penghasilan = 100 - 80 = 20\nGini = 80/20 = 4\nSehingga, Gini rasio 0,4.",
+      "f1": 0.0925925925925926
+    },
+    {
+      "question": "Sebutkan nama aplikasi Belanja Online dari Pemerintah Provinsi Jawa Timur untuk pemberdayaan ekonomi.",
+      "reference": "Aplikasi Belanja Online dari Pemprov Jatim disebut Jatim Bejo (Jatim Belanja Online).",
+      "prediction": "1. Aplikasi Belanja Online, 2. Aplikasi Belanja Online, 3. Aplikasi Belanja Online, 4. Aplikasi Belanja Online, 5. Aplikasi Belanja Online, 6. Aplikasi Belanja Online, 7. Aplikasi Belanja Online, 8. Aplikasi Belanja Online, 9. Aplikasi Belanja Online, 10. Aplikasi Belanja Online, 11. Aplikasi Belanja Online, 12. Aplikasi Belanja Online, 13. Aplikasi Belanja Online, 14. Aplikasi Belanja Online, 15. Aplikasi Belanja Online, 16. Aplikasi Belanja Online, 17. Aplikasi Belanja Online, 18. Aplikasi Belanja Online, 19. Aplikasi Belanja Online, 20. Aplikasi Belanja Online, 21. Aplikasi Belanja Online, 22. Aplikasi Belanja Online,",
+      "f1": 0.09999999999999999
+    },
+    {
+      "question": "Apa fungsi aplikasi SINTAGELIS di Jawa Timur?",
+      "reference": "SINTAGELIS adalah Aplikasi Sistem Informasi Terpadu Penanggulangan Kemiskinan yang digunakan oleh Pemerintah Provinsi Jawa Timur untuk pengentasan kemiskinan.",
+      "prediction": "1. Pemilik dapat menikmati pengalaman bermain bersama, serta mendapatkan informasi yang diperlukan untuk mewujudkan kehidupan sehat dan hidup yang baik.\n2. Dengan adanya SINTAGILELIS, pelayanan publik dapat terwujud dengan mudah, yaitu, dimaksimalkan, jadi, kreatif, dan berkualitas tinggi.\n3. Peningkatan kemampuan para pelajar, mahasiswa, dan calon pendidikan umum, serta peningkatan kesejaan sosial ekonomi, kemanusiaannya, dan kemandirian pada kelompok masyarakat.\n4. Membuka lapangan kerja bagi para pekerja, serta mempercepat proses pembangunan daerah, serta meningkatkan kinerja pemerintah pusat.\n5. Bisa menjadi sarana layanan publik, termasuk dalam bentuk lanskap atau sementara lainnya.\n6. Menyelenggarakan perbaikan lingkungan, serta menghasilkan informasi yang bermanfaat bagi masyarakat.\n7",
+      "f1": 0.06779661016949154
+    },
+    {
+      "question": "Bagaimana cara pengajuan JOSS GANDOS Jatim?",
+      "reference": "JOSS GANDOS (Jatim Online Single Submission Goes Android Operating System) memberikan kemudahan layanan perizinan terpadu untuk masyarakat dan investor di tingkat provinsi dengan akses online.",
+      "prediction": "1. Pilih salah satu yang paling tepat, lalu masukkan data di dalam formulir. 2. Klik simpan untuk menyelesaikan proses. 3. Lihat hasil dari penjualan.",
+      "f1": 0.08163265306122448
+    },
+    {
+      "question": "Apa peran TNP2K dalam penanggulangan kemiskinan?",
+      "reference": "Tim Nasional Percepatan Penanggulangan Kemiskinan (TNP2K) berperan untuk menyelaraskan kebijakan dan program penanggulangan kemiskinan antar kementerian dan lembaga dalam rangka percepatan penurunan kemiskinan.",
+      "prediction": "Pada tahun 1945, pemerintah pusat (presiden) Banyuakta mengeluarkan Peraturan Menteri Kesejahteraan Masyarakat Nomor 30. Perlu diketahui bahwa pada saat itu, perluasan kemiskaan yang diperlukan adalah untuk menurunkannya angka kematian di daerah yang sebelumnya mencapai 67.800 orang dan meningkatkan angka kematian di daerah lainnya menjadi 10.000 orang. Dalam periode 1945-1946, perluasan kemiskaan dilakukan dengan cara mempercepat produksi, pengolahan, dan distribusi bahan pokok, serta pembatasan produksi tanpa batas kepada para pekerja. Sebagai informasi, total produksi bahan pokok pada tahun 1945 adalah 1,000 juta makanan, 1,000 juta minuman air bersubsidi, 1,000 juta susun, 1,000 juta gula, 1,000",
+      "f1": 0.06837606837606837
+    },
+    {
+      "question": "Apa fungsi utama dari Sistem Informasi Pemerintah Daerah (SIPD)?",
+      "reference": "SIPD berfungsi untuk mengintegrasikan perencanaan, penganggaran, dan pelaporan keuangan daerah secara elektronik agar lebih transparan dan efisien.",
+      "prediction": "Sistem informasi pemerintah daerah adalah sistem yang berfungsional untuk menunjang proses pengentasan, peningkatan, dan pelaksanaan perbaikan sumber daya terpadu. Dalam hal ini, sistem informasi pemerintah daerah dapat digunakan oleh seluruh warga masyarakat dalam melakukan pekerjaan sektor kelembagaan, pembangunan, serta kesejahtarianan di wilayah pemerintah daerah.\nApakah Sistem Informasi Pemda Bisa Digunakan Kita? Jawab: Sistem informasi pemda bisa digunakan pada tahap awal pembangunan, seperti pembangunan rumah tangga, pembangunan tanaman, atau pembangunan usaha milik. Selanjutnya, sistem informasi pemerintah daerah juga dapat digunakan pada tahapan kedua, yaitu pembangunan infrastruktur, pembangunan ruang, dan pembangunan lainnya.",
+      "f1": 0.07476635514018692
+    },
+    {
+      "question": "Bagaimana peran SMERU Research Institute dalam pembuatan kebijakan di Indonesia?",
+      "reference": "SMERU melakukan penelitian independen di bidang sosial ekonomi dan kemiskinan yang hasilnya sering dijadikan acuan berbasis bukti (evidence-based) oleh pemerintah untuk merumuskan kebijakan publik.",
+      "prediction": "Perusahaan yang berada di luar negeri, yaitu perusahaan yang tidak memiliki perluat atau perluasnya sendiri. Pekerjaannya adalah untuk memenuhi standar pemerintah dan mendorong pengembangan ekonomi negara.\nPerusahaan yang ada di Indonesia, yaitu perusahaan yang memiliki perluasinya sendiri. Dengan demikian, perluasan dapat dilakukan secara bersifat global dengan tujuan mencipta sebuah perluasian baru. Sementra perluasinya sendiri, maka perluasan tersebut bukanlah perluat, tetapi merupakan perluasian dari perluasinya sendiri.\nSedangkan perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri, yaitu perluasinya sendiri,",
+      "f1": 0.09836065573770492
+    },
+    {
+      "question": "Apa tujuan dari program Bantuan Pangan Non Tunai (BPNT)?",
+      "reference": "BPNT bertujuan untuk menyalurkan bantuan sosial pangan dalam bentuk non-tunai kepada Keluarga Penerima Manfaat (KPM) agar mereka dapat membeli bahan pangan bergizi di e-warong.",
+      "prediction": "Program Bantu Pangan Non Tunai, atau BPNT, adalah program pemerintah pusat yang berlaku di seluruh Indonesia. Program ini dikenal sebagai program pemberi bantuan kepada masyarakat non tunai, yaitu orang yang tidak memiliki perluannya sendiri, termasuk anak-anak, dan juga para pekerja yang tidak dapat memenuhi kebutuhan rumah tangganya.\nProgram BPNT dilaksanakan oleh 10 pusat, yakni :\n- Kementerian Sosial\n- Kementerian Perindustri\n- Kementerian Pertanian\n- Kementerian Sumber Daya Alam\n- Kementerian Sipil\n- Kementerian Pelayanan Kesehatan\n- Kementerian Sistem Informasi dan Pemuda\n- Kementerian Sistem Pusat\n- Kementerian Sistem Pusat\nKebanyakan peneliti mengatakan bahwa program BPNT sebenam-banyaknya dituntut, namun belum ada data yang bisa dipercaya untuk menunjukkan apakah program tersebut benar-benar bekerahkan dengan kewaj",
+      "f1": 0.125
+    },
+    {
+      "question": "Siapa sajakah sasaran prioritas dari intervensi pencegahan stunting?",
+      "reference": "Sasaran prioritasnya meliputi ibu hamil, ibu menyusui, anak usia 0-23 bulan (1.000 Hari Pertama Kehidupan), serta remaja putri dan calon pengantin.",
+      "prediction": "Saya yakin, siap-siap. Karena saya sudah berikan informasi kepada para pelaksana yang ada di kantor pusat dan juga diberikan surya keuangan untuk memastikan bahwa semua data tersebut benar-benar terkendala.\nSaya yakin, siap-siap. Karena saya sudah mencoba melakukan penelitiannya sendiri, sebab saya belum perlu menjabarkan apa saja masalah-masalah yang mungkin disebabkan oleh laporan-pengurusan atau pengamatan lainnya, karena itu tidak boleh dipisahkan dengan apakah ada masalah yang ditangani oleh pemerintah maupun pihak swasta.\nSaya yakin, siap-siap. Karena saya telah mengajukan permohonan keuangan kepada pemerintah, sehingga saya dapat melihat apakah ada masalah yang bisa disebarilakan secara bersifat publik, misalnya jika ada kasus-kasus yang menjadi masalah bagi pemerintah, maka harus dilakukan penyaluran uang yang sesuai dengan syarat yang diminta pemerintah.\nSaya yakin, siap-siap",
+      "f1": 0.014285714285714285
+    },
+    {
+      "question": "Apa yang dimaksud dengan Podes yang sering didata oleh BPS?",
+      "reference": "Podes (Potensi Desa) adalah pendataan lengkap yang dilakukan oleh BPS terhadap seluruh wilayah administrasi setingkat desa/kelurahan untuk mengumpulkan data potensi keruangan, infrastruktur, dan sosial ekonomi.",
+      "prediction": "Dalam hal yang sama, pemberlakukan dan pengelolaan data yang diperluas diharapkan dapat digunakan untuk memenuhi kebutuhan perbankan. Kebijiankannya data tersebut menjadi pusat informasi bagi para pelaku usaha, serta mendorong penjualan barang tambahan kepada target pasar.\nDengan adanya data yang terdistribusi secara luang, maka akan semakin mudahnya pencetakan laporan, serta mengetikkan data yang berbeda-beda antara bank yang bersifat khusus atau tidak bersifat khusus. Hal ini juga merupakan bentuk dukungan pada konsepsi bank yang sehat, baik dari sisi administratif maupun ekonomi.\nKedua, pemasangan data yang dilakukan melalui sistem informasi yang tepat, sehingga dapat dipengaruhi oleh para pelajar, mahasiswa, dan calon warga. Sementra itu, poin-poin yang dibentuk dalam sebuah data yang lebih besar tentu saja bisa mendekatinya, yaitu, paling banyak, jadi, cepat, efektif, dan layam.\nSaat ini",
+      "f1": 0.09395973154362416
+    },
+    {
+      "question": "Apa peran Bank Jatim dalam mendorong digitalisasi UMKM?",
+      "reference": "Bank Jatim mendorong digitalisasi UMKM melalui penyediaan fasilitas QRIS, aplikasi JConnect, dan program pendampingan untuk mempermudah transaksi dan memperluas akses pasar UMKM.",
+      "prediction": "Bank Jatim berperan sangat penting. Karena bank jadi yang paling utama, karena bisa menjadi pusat penggerak ekonomi di Indonesia.\nKami juga memiliki kantor pusat di luar negeri, yaitu pusat pusat pusat pusat pusat pusat pusat pusat pusat pusat pusat pusat pusat pusat pusat pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pusuhan pus",
+      "f1": 0.026315789473684213
+    },
+    {
+      "question": "Jelaskan apa itu Satu Data Indonesia (SDI).",
+      "reference": "Satu Data Indonesia adalah kebijakan tata kelola data pemerintah untuk menghasilkan data yang akurat, mutakhir, terpadu, dan dapat dipertanggungjawabkan serta mudah diakses dan dibagipakaikan antar instansi.",
+      "prediction": "Satu data adalah informasi yang diperlukan untuk menyebar dan memengaruhi pihal. Informasi ini dapat digunakan oleh seluruh orang, baik dalam bentuk informatif atau non-informatif.\nSistem satunya datanya sendiri bukan berarti semua informasi harus ditampilkan di situs-situs tersebut. Saya juga tidak perlu mengeluarkan informasi yang sama sekala pada satu situs saja, tetapi bisa didistribusi ke beberapa situs lainnya.",
+      "f1": 0.16867469879518074
+    },
+    {
+      "question": "Apa syarat utama bagi sebuah wilayah untuk bisa disebut sebagai Desa Mandiri?",
+      "reference": "Desa Mandiri adalah desa yang memiliki kemampuan melaksanakan pembangunan desa untuk peningkatan kualitas hidup, ketahanan sosial, ketahanan ekonomi, dan ketahanan ekologi secara berkelanjutan berdasarkan Indeks Desa Membangun (IDM).",
+      "prediction": "Dalam hal yang sama, perlu diperiksa apakah sudah ada sumber daya. Kedua, apakah sudah terpastikan bahwa berada di daerah yang sebenar-benar mandiri? Apakah sudah mencapai batas keadilan? Apakah sudah memenuhi standar pelayanan publik? Apakah sudah mendapatkan kewarganegaraan? Apakah sudah memiliki nama dan identitas? Apakah sudah mampu menyebar lebih dari 10 persen? Apakah sudah mencapai batasan penduduk? Apakah sudah mencapai batasan hutan? Apakah sudah mencapai batasan tanah air? Apakah sudah mencapai batasan lahan? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman? Apakah sudah mencapai batasan tanaman",
+      "f1": 0.055172413793103454
+    },
+    {
+      "question": "Mengapa angka Partisipasi Kasar (APK) dan Angka Partisipasi Murni (APM) penting dalam konteks pendidikan?",
+      "reference": "APK dan APM digunakan sebagai indikator utama untuk mengukur tingkat penyerapan dan partisipasi penduduk usia sekolah dalam sistem pendidikan di suatu wilayah.",
+      "prediction": "Apakah APK, APM, atau APD dapat digunakan untuk menilai kemampuan penguatan keseimbangan? Apakah APK, APM, atau APD dapat digunakan untuk menilai kemampuannya mendorong penilaian kuantitas sumber daya manusia yang diperlukan? Apakah APK, APM, atau APD dapat digunakan untuk menunjang pengurusan perbedaan antara sementara dengan aparat utama? Apakah APK, APM, atau APD dapat digunakan untuk memastikan bahwa sementara tidak ada dampak negatif pada perkembangkan keseimbangan? Apakah APK, APM, atau APD dapat digunakan untuk mengidentifikasi kemungkinan adanya dampak positif pada perkembangannaman keseimbangan? Apakah APK, APM, atau APD dapat digunakan untuk mengetahui apakah sementara telah mencapai batas minimum kualitas pembelajaran? Apakah APK, APM, atau APD dapat digunakan untuk mengetahui apakah sementara belum mencapai batas minimum kualitas pembel",
+      "f1": 0.07352941176470587
+    },
+    {
+      "question": "Sebutkan fokus utama dari program pemberdayaan masyarakat pesisir di Jawa Timur.",
+      "reference": "Fokus utamanya meliputi peningkatan kapasitas nelayan dalam budidaya dan pengolahan hasil laut, bantuan alat tangkap yang ramah lingkungan, serta akses permodalan melalui koperasi.",
+      "prediction": "Pada tahun 2018, jumlah penduduk yang mencapai batas 5 jutaan orang (juta) dan jumlah penduduk yang mencapai batas 4 jutaan orang (dalam sektor perempuan). Dari data tersebut dapat dilihat bahwa jumlah penduduk yang mencapai batasan 5 jutaan orang adalah 3.679.000 orang, yaitu 1.000.000 orang yang merupakan penduduk pemerintah, 2.679.000 orang yang merupakan penduduk swasta, serta 1.000.000 orang yang merupakan penduduk keluargamnya. Sementara itu, jumlah penduduk yang mencapai batasan 4 jutaan orang adalah 1.000.000 orang, yaitu 1.000.000 orang yang merupakan penduduk pemerintah, 1.000.000 orang yang merupakan penduduk swasta, serta 1.000.000 orang yang merupakan penduduk keluarg",
+      "f1": 0.06837606837606837
+    },
+    {
+      "question": "Apa indikator utama yang digunakan untuk mengukur kemiskinan di Indonesia?",
+      "reference": "Indikator utama yang digunakan adalah garis kemiskinan yang dihitung berdasarkan kebutuhan dasar makanan dan non-makanan.",
+      "prediction": "Indeks Kemiskanan (Kemiskuan) adalah indikator utama yang digunakan untuk menilai kemandirian masyarakat. Kementerian Sumber Daya Alam dan Pekerjaan Manusia, yaitu Menteri Sistem Pangan dan Peralatan Menurut Kepala Biro Kesehatan, 2018, menyatakan bahwa pemerintah pusat telah memastikan bahwa perlu diperbaiki sistem penjualan bahan pokok, yakni pemberlakukan program pembangunan sumber daya alam, pengembangan laboratorium, serta pemenuhan kepedulannya dalam bidang pertanian.\nDalam hal ini, pemerintah pusat juga mencoba melakukan evaluasi pada tahun 2017 melalui laporan data penduduk, dengan targetnya sebanyak 35 persen dari total penduduk umum, yaitu 46 juta orang, atau 9,5 juta orang, yaitu 10,5 juta orang, 11,5 juta orang, 12,5 juta orang, 13,5 j",
+      "f1": 0.1016949152542373
+    },
+    {
+      "question": "Apa perbedaan antara kemiskinan absolut dan kemiskinan relatif?",
+      "reference": "Kemiskinan absolut mengacu pada ketidakmampuan memenuhi kebutuhan dasar minimum, sedangkan kemiskinan relatif membandingkan kondisi ekonomi seseorang dengan standar masyarakat sekitarnya.",
+      "prediction": "Kemiskanan absolut adalah kondisi yang tidak terkendala, yaitu ketidak ada gunungan. Kondisi ini berarti bahwa semua orang memiliki kebutuhan hidup, tetapi itu bukanlah kenyataan.\nKemiskanan relatif adalah kondisi yang ditetapkan oleh pemerintah, yaitu ketidakadaan gunung diantarkan untuk diperiksa secara berkala. Pekerjaan tersebut dilakukan dengan tujuan mengurangi kemiskannya, yaitu menunjang fungsi ekonomi, yaitu peninggikan nilai, yaitu meningkatkan penghasilan, yaitu mempercepat produksi, yaitu mendorong pertumbuhannya, yaitu menciptakan laboratorium baru, yaitu membuat ilmu yang lebih baik, yaitu membentuknya menjadi negoalis, yaitu menjadikan konsumen sebagai pekerja utama, yaitu memberikan manfaat kepada para pekerja, yaitu menuntaskan pembangunan, yaitu menjamin stabilitas, yaitu mengetahui kondisinya, yaitu mengetah",
+      "f1": 0.09999999999999999
+    },
+    {
+      "question": "Mengapa data terpadu kesejahteraan sosial (DTKS) penting dalam program bantuan sosial?",
+      "reference": "DTKS penting karena menjadi basis data utama untuk menentukan sasaran penerima bantuan sosial agar tepat sasaran.",
+      "prediction": "Dalam hal yang sama, apakah ada perbedaan antara pemerintah pusat dan daerah? Apakah perlu ditetapkan perbedaan perlu diperiksa? Apakah perlu dibandingkan dengan perlu dipilih? Apakah perlu diatur perlu dipilih? Apakah perlu disesuaikan dengan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dididik perlu dipilih? Apakah perlu diseleksi perlu dipilih? Apakah perlu dikaji perlu dipilih? Apakah perlu digunakan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dipilih? Apakah perlu dilakukan perlu dip",
+      "f1": 0.0
+    },
+    {
+      "question": "Apa hubungan antara tingkat pendidikan dan kemiskinan?",
+      "reference": "Semakin rendah tingkat pendidikan, semakin besar kemungkinan seseorang mengalami kemiskinan karena keterbatasan akses terhadap pekerjaan yang layak.",
+      "prediction": "Pada tahun 2018, perluasan penduduk yang lebih baik di Indonesia. Dari data Kementerian Sumber Daya Manusia dan Sistem Pelayanan Kesejahteraan Masyarakat (Kemenkumham) pada tahun 2017, diperkirakan jumlah penduduk yang mencapai 45 juta orang, dengan total penduduk sekitar 63 juta orang. Sebagai informasi, berdasarkan data Kementerian Sdm, pada tahun 2019, jumlah penduduk yang mencapai 45 juta orang, dengan total penduduk sekitar 63 juta orang. Jumlah penduduk yang mencapai 45 juta orang, yaitu 45 persen dari 100 juta orang, atau 45 persentase dari 100 juta orang. Berikut ini adalah tabel yang dapat digunakan untuk mengetahui apakah ada pertimbangan bahwa penduduk yang mencapai 45 persen dari 100 juta orang merupakan penduduk yang cukup baik, sedangkan jika tidak, maka",
+      "f1": 0.015151515151515148
+    },
+    {
+      "question": "Jika suatu daerah memiliki tingkat pengangguran tinggi, bagaimana dampaknya terhadap kemiskinan?",
+      "reference": "Tingkat pengangguran yang tinggi dapat meningkatkan angka kemiskinan karena banyak masyarakat tidak memiliki sumber pendapatan.",
+      "prediction": "Dampaknya adalah adanya perbedaan yang tidak seimbangkan antara pemerintah dan masyarakat. Pada dasarnya, pemerintah dapat menyesuaikan kebijakan, sementara masyarakat sendiri masih berdaya kerja normal.\nDekatkan pada kesejaan dengan pemerintah, maka akan ada konflik di bidang-penduduk, yaitu persoalan sosial, pendidikan, hujan, atau bahaya lainnya. Kediamannya juga bisa menjadi pusaran bagi pemerintah untuk mengurangi penganggulangan dana, sehingga pemerintah dapat mempercepat peningkatan penganggulan dana. Sementra itu, pemerintah dapat menciptakan kondisi yang lebih baik, termasuk dalam hal ini, pemerintah dapat memberi tahu para warga bahwa pemerintah telah mendapatkan dukungan dari pemerintah, sehingga pemerintah dapat melindungi dirinya sendiri, jadi pemerintah dapat menjaga stabilitas ekonomi, tetapi demikian juga, pemerintah dapat membuat",
+      "f1": 0.06666666666666667
+    },
+    {
+      "question": "Apa peran UMKM dalam pengentasan kemiskinan di Jawa Timur?",
+      "reference": "UMKM berperan dalam menciptakan lapangan kerja, meningkatkan pendapatan masyarakat, dan mendorong pertumbuhan ekonomi lokal.",
+      "prediction": "1. Kementerian Sumber Daya Manusia dan Pekerjaan Umum, Kementerian Sistem Pelayanan Kesehatan, Kementerian Ekonomi dan Bisnis, Kementerian Sosial dan Kebudayaan, Kementerian Pangan dan Makanan, Kementerian Transportasi, Kementerian Perindustri, Kementerian Pertanian, Kementerian Lahan Bumi, Kementerian Pusat Pengendalian, Kementerian Pemuda dan Kerajinan, Kementerian Pariwisata, Kementerian Pupuk Tanah, Kementerian Peralatan Mobil, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian Pangan dan Mandolongan, Kementerian",
+      "f1": 0.0404040404040404
+    },
+    {
+      "question": "Bagaimana digitalisasi dapat membantu mengurangi kemiskinan?",
+      "reference": "Digitalisasi membantu membuka akses pasar, meningkatkan efisiensi usaha, dan memperluas kesempatan kerja melalui platform digital.",
+      "prediction": "Pada tahun 2018, sekitar 45 juta orang di Indonesia tidak memiliki internet. Dari data tersebut, jumlah penduduk yang terlalu banyak adalah 36 juta. Jumlah penduduk yang paling banyak adalah 7 juta. Kedua dengan jumlahnya 9 juta. Sementara itu, jumlah penduduk yang paling sedikit adalah 10 juta. Sehingga, total penduduk yang diperluas adalah 45 juta. Banyaknya penduduk yang diperluas mencapai 45 persen dari total penduduk yang ada pada tahun 2018. Berdasarkan data tersebut, pertimbangan para paket perlu digunakan untuk memastikan bahwa digitalisasi dapat berkontribusi positif dalam pengurangan kemiskinan.\nKemiskinannya sendiri juga menjadi kebutuhan utamanya bagi para pelaksana program digitalisasi. Maka demikian, khususkan akan dilakukan peneliti dan evaluasi secara bersama-sama. Selanjutnya, mungkin juga bisa dilakukan proses pembangunan situs web atau aplik",
+      "f1": 0.029850746268656716
+    },
+    {
+      "question": "Apa yang dimaksud dengan inklusi keuangan dalam konteks pengentasan kemiskinan?",
+      "reference": "Inklusi keuangan adalah akses masyarakat terhadap layanan keuangan seperti tabungan, kredit, dan asuransi untuk meningkatkan kesejahteraan ekonomi.",
+      "prediction": "Kebijian keuangan adalah proses penurunan anggaran, peningkatan kapasitas dan kualifikasi, serta penurunan risiko perusahaan. Dalam hal ini, pengusaha dapat menekankan pada pengentasan kemiskinan.\nSumber: Buku Dasar Pemuda (2018)",
+      "f1": 0.13333333333333333
+    },
+    {
+      "question": "Jika bantuan sosial tidak tepat sasaran, apa dampaknya?",
+      "reference": "Dampaknya adalah ketidakefisienan anggaran dan tidak optimalnya penurunan angka kemiskinan.",
+      "prediction": "Banyak yang berikan dukungan kepada pihalannya. Peningkatan kesejahtarianan di luar rumah mungkin menjadi kebutuhan bagi para pekerja.\nDampaknya: Kebijian dan perluasan pengelolaan ruang bersama, terutangnya, juga dapat mempercepat proses pembukaan usaha baru, serta meningkatkan kemiskinannya.\nBukan semua orang bisa bekerja sama dengan pemerintah pusaka untuk mengurangi angka kasus, jadi hal itu bukanlah suatu kebijakan utama. Dengan demikronisasi, maka akan semakin banyak pula peluang kerjayaan, yaitu, peningkatan kesejahtarianan, baik dalam bentuk pelayanan sosial maupun pengujiangan.\nKemudian, paling penting adalah, bahwa pemerintah pusaka harus mengetahui, apakah ada konflik antara pemerintah pusaka atau pemerintah daerah, sehingga diperlukan koordinasi, sekaligus adanya komunikasi, agar kedua pilar tersebut dapat",
+      "f1": 0.07079646017699115
+    },
+    {
+      "question": "Apa hubungan antara stunting dan kemiskinan?",
+      "reference": "Stunting sering terjadi pada keluarga miskin karena kurangnya akses terhadap gizi, layanan kesehatan, dan sanitasi yang baik.",
+      "prediction": "Stunting, kematian yang terjadi karena stunting, merupakan salah satu dampak negatif dari kelembongkamnya. Kementerian Sumber Daya Mineral dan Air Tirtu (MST) menyarankan bahwa stunting dapat berdampak pada kemandirannya, yaitu meningkatkan risiko kematian, kesehatan, dan pencegukan. Dalam hal ini, stunting juga menjadi salah satu faktor yang memengaruhi kemiskaan.\nStunting adalah kondisi sosial dimana jumlah anak yang dikelompokkan sekitar 10-25 persen lebih banyak daripada orang lain di kelompok normal. Stunting bisa disebabkan oleh beberapa faktor, termasuk adanya perbedaan laboratorium, pengelolaan, atau penyaluran sementra yang tidak layak, serta ketidakseimbangan laboratorium dengan pekerja yang memiliki status tertinggi. Peningkatan produksi, tambahan laboratorium, dan perkiraan yang dilakukan untuk mengurangi stunting juga serangstunting.\nKemiskuan adalah situasi dalam mana ada sedikitnya 30-",
+      "f1": 0.10687022900763359
+    },
+    {
+      "question": "Bagaimana peran pemerintah daerah dalam menurunkan kemiskinan?",
+      "reference": "Pemerintah daerah berperan melalui program bantuan sosial, pemberdayaan ekonomi, peningkatan layanan pendidikan, dan kesehatan.",
+      "prediction": "Pemilik usaha, pengusaha, dan para pekerja yang berada di luar kesejaan dapat dinyatakan sebagai penerima bantuan sosial. Dengan demikian, pihak-pihal tersebut tidak boleh mempercepat produksi, menghasilkan barang dagangan, atau menjual produk yang tidak layuarnya.\nDalam hal ini, pemerintah daerah seharusnya mendorong pembangunan infrastruktur yang dibentuk untuk menciptakan laboratorium, pusat kerja, dan industri lainnya. Namun, pemerintah juga harus melindungi kehidupan masyarakat dengan cara memberikan dukungan kepada pelayanan publik, yaitu pelayanan terbaik bagi masyarakat, baik itu pelayanan umum maupun pelayanan utama.\nKebijanian pemerintah daerah sebenar-benar akan menjadi peluang bagi pemerintah daerah untuk mendekorasi masing-masing wilayah daerah, sehingga pula pemerintah daerah bisa lebih mudah melakukan peningkatan ekonomi, serta meningkatkan daya saing m",
+      "f1": 0.11382113821138211
+    },
+    {
+      "question": "Apa manfaat penggunaan big data dalam penanggulangan kemiskinan?",
+      "reference": "Big data membantu pemerintah dalam analisis yang lebih akurat untuk menentukan kebijakan dan sasaran program.",
+      "prediction": "Penggunaan big data untuk mengetahui kondisi sosial dan ekonomi masyarakat, serta memastikan bahwa pelayanan yang diberikan sesuai dengan kebutuhan. Dengan adanya penggunaan big data tersebut dapat dijadikan informasi penting bagi pemerintah pusaran kesejaan dan penciptaan sistem perbaikan infrastruktur yang sehat dan berkelanjutan.\nDari sini kita bisa melihat apakah ada penggunaan big data atau tidak? Apakah sudah terpastikannya penggunaan big data? Apakah sudah dilakukan penggunaan big data? Apakah sudah didirkan penggunaan big data? Apakah sudah ditetapkan penggunaan big data? Apakah sudah dipilih penggunaan big data? Apakah sudah dibuka penggunaan big data? Apakah sudah diserahkan penggunaan big data? Apakah sudah dikembangkan penggunaan big data? Apakah sudah mendata penggunaan big data? Apakah sudah mencampur penggunaan big data? Apakah sudah digunakan penggunaan big data? Apakah sudah dimuat penggunaan big data? Apakah sudah dicatat penggunaan",
+      "f1": 0.08275862068965517
+    },
+    {
+      "question": "Jika suatu program bantuan meningkatkan pendapatan masyarakat, apa dampak jangka panjangnya?",
+      "reference": "Dampak jangka panjangnya adalah peningkatan kesejahteraan, penurunan kemiskinan, dan peningkatan kualitas hidup.",
+      "prediction": "Dampak yang diperinci adalah penurunan anggaran pemerintah. Karena itu, perlu ditetapkan strategi penggolongan dan pembatasan pada sisi administrasi.\nDeklarasi: Pemilik usaha dapat memenuhi batas administrasi sebagian dari total penduduk di wilayah yang bersifat kewelokal atau tidak terkendala dengan cara melengkari uang minimal 100 perslmi (dalam jumlah yang sama) untuk menunjang kegiatan usaha. Sementara demikian, pemilik usaha juga harus mengurus laporan administrasi yang berupa data biaya operasional, data modalitas, serta data lainnya. Lalu, selanjutnya, pemilik usaha bisa melakukan penjualan barang yang dibayar oleh para pelaku usaha, tetapi hanya dalam jumlah yang sesuai dengan batasan administrasi.\nKebijakan: Perlu dilakukan evaluasi secara berkala, yaitu setelah periode kerja kerjinya mencapai batasan administrasi, maka perlu dilakukan evaluasi lagi. Sebab, jika sudah mencapai batasan administrasi",
+      "f1": 0.061068702290076333
+    },
+    {
+      "question": "Apa yang dimaksud dengan ketahanan ekonomi rumah tangga?",
+      "reference": "Ketahanan ekonomi rumah tangga adalah kemampuan keluarga dalam memenuhi kebutuhan hidup secara stabil dan berkelanjutan.",
+      "prediction": "Ketahanan ekonomi rumah tanggul adalah kondisi sosial di mana para pekerja dan pengusaha memiliki keadilabilitas yang baik, yaitu: 1. Pekerjaan terbaik; 2. Pengelolaan yang tepat; 3. Kebijian yang paling mudik; 4. Banyaknya kerja yang berjalan; 5. Keraguan yang tinggi; 6. Perhatian pada keseimbangan; 7. Tidak ada perbedaan besar; 8. Sistem perdamaan yang sehat; 9. Kekayaan yang diperlukan; 10. Kediamanannya; 11. Kondisi yang aman; 12. Kepadaan yang jauh dari luka; 13. Kecamilan yang buruk; 14. Kewargenungan yang tidak adiktif; 15. Kualitas yang baik; 16. Keadilan yang baik; 17. Keterpaduan yang kuat; 18. Konsistensi yang kuat; 19. K",
+      "f1": 0.0900900900900901
+    },
+    {
+      "question": "Mengapa akses terhadap pendidikan penting untuk memutus rantai kemiskinan?",
+      "reference": "Pendidikan meningkatkan keterampilan dan peluang kerja sehingga membantu meningkatkan pendapatan dan kesejahteraan.",
+      "prediction": "Pada tahun 2018, jumlah penduduk yang tidak dapat berkomunikasi dengan pemerintah adalah sekitar 35 juta orang. Dari data tersebut, diperkirakan ada 47 juta orang yang belum memiliki kartu kesejaan dan 69 juta orang yang tidak memiliki perbankan. Jumlah ini mencakup semua penduduk yang tidak mendapatkan keperluannya di dalam negeri.\nDengan demikronisasi, maka mungkin akan menjadi masalah bagi para pelajar, mahasiswa, tenaga kerja, pengusaha, pekerja, dan para ahli lainnya. Kebijian pada umumnya disyaratkan oleh pemerintah, tetapi juga bisa ditetapkan secara bersifat personal. Sehingga, jika pemerintah menuntaskan, maka pihalunya sendiri harus dipenuhi. Sementara itu, pelayanan kepada para pembantu kerja (pengusaha) atau para ahli lainya pun masih boleh digunakan. Maka, apakah pemerintah sudah melakukan penataan, atau buka persaingan? Apakah pemerintah",
+      "f1": 0.062015503875969
+    },
+    {
+      "question": "Apa peran sektor pertanian dalam pengurangan kemiskinan di daerah pedesaan?",
+      "reference": "Sektor pertanian menjadi sumber utama pendapatan masyarakat desa dan dapat mengurangi kemiskinan jika dikelola dengan baik.",
+      "prediction": "Sebuah kegiatan yang diperlukan, yaitu pengujiannya. Dengan adanya sektor pertanian, maka akan terjadi peningkatan produksi, dan juga meningkatkan kesejaan. Karena itu, sektor pertanian menjadi penting untuk menciptakan ekonomi yang lebih baik.\nSumber: Biro Kecamta Sipil",
+      "f1": 0.27450980392156865
+    },
+    {
+      "question": "Bagaimana peran koperasi dalam membantu masyarakat miskin?",
+      "reference": "Koperasi membantu menyediakan akses permodalan, pelatihan, dan pemasaran bagi masyarakat kecil.",
+      "prediction": "Koperasi dapat menjadi sarana pemasukan, sementara itu juga bisa menjadi sarana pengelolaan. Dengan adanya perluasan modal tersebut, maka akan terlihat perkembangan sosial dan ekonomi yang lebih baik.\nKemudian, perlu diketahui bahwa perlu diperiksa apakah ada konflik antar pelaku usaha dengan para pekerja yang berada di luar koperasi? Apakah ada konflik antar pelajar atau pekerja yang tidak memiliki kemampuan untuk bekerja sama? Apakah ada konflik antar pelajar maupun pekerja yang tidak memiliki kemampuannya sendiri? Apakah ada konflik antar pelajar maupun pekerja yang tidak memiliki kemampunya sendiri? Apakah ada konflik antar pelajar maupun pekerja yang tidak memiliki kemampunya sendiri? Apakah ada konflik antar pelajar maupun pekerja yang tidak memiliki kemampunya sendiri? Apakah ada konflik antar pelajar maupun pekerja yang tidak memiliki kemampunya sendiri? Apakah ada konflik antar pelajar maupun pe",
+      "f1": 0.02877697841726619
+    },
+    {
+      "question": "Jika inflasi meningkat, bagaimana pengaruhnya terhadap masyarakat miskin?",
+      "reference": "Inflasi dapat menurunkan daya beli masyarakat miskin karena harga kebutuhan pokok meningkat.",
+      "prediction": "Pada tahun 2018, perluasan pangan dan kesejahteraan masyarakat mencakupu sekitar 35 juta ratusan ribuan. Dari data yang diperiksa, diharapkan dapat mencukupi sekitar 46 juta ratusan ribuan. Karena itu, perlu dilakukan penelitian untuk mengetahui apakah inflasi meningkat atau tidak.\nDengan demikronisinya, maka akan ada kontrasepsialitas yang berarti bahwa kondisi ekonomi lebih baik. Sehingga, kontrasepsialitas tersebut bisa ditangani dengan mudah. Bukan semua negara memiliki kondisi ekonomi yang baik, sehingga perlu dibandingkan dengan kondisi yang baik. Maka, jika kondensi ekonomi semakin baik, maka kontrasepsialitas juga semakin baik.",
+      "f1": 0.10416666666666666
+    },
+    {
+      "question": "Apa hubungan antara urbanisasi dan kemiskinan?",
+      "reference": "Urbanisasi tanpa perencanaan dapat meningkatkan kemiskinan di perkotaan karena terbatasnya lapangan kerja dan meningkatnya biaya hidup.",
+      "prediction": "Urbanisasi, kualitas pangan yang baik, serta perkembangannya, dapat memengaruhi kemandirian masyarakat. Karena itu, perlu diketahui bahwa kesejahteraan masyarakat juga berkontribusi pada keberhasilan ekonomi negar yang diperlukan untuk mencapai kesejaan umum.\nKemiskin dengan kondisi kreatif, yaitu mereka memiliki keterampilan atau skill yang luar biasa, termasuk dalam bidang teknik, ilmu peneliti, ilmu finansial, ilmu sosial, ilmu hukum, ilmu manufaktur, ilmu pendidikan, ilmu teknologi, ilmu komunikasi, ilmu marketing, ilmu pengolahan, ilmu produksi, ilmu usaha, ilmu kerajutan, ilmu jasa, ilmu administrasi, ilmu pelatihan, ilmu sumber daya, ilmu pembukaan, ilmu konstruktur, ilmu pemuda, ilmu petani, ilmu pertanian, ilmu pangan, ilmu pangan, ilmu pangan, il",
+      "f1": 0.052173913043478265
+    },
+    {
+      "question": "Mengapa validasi data penerima bantuan sosial perlu dilakukan secara berkala?",
+      "reference": "Agar data tetap akurat dan bantuan dapat diberikan kepada pihak yang benar-benar membutuhkan.",
+      "prediction": "Pada tahun 2018, Bupati Kecamatan Sambong (Kec. Sambong) telah melakukan penjabaran dan pengujian yang diperlukan untuk memastikan bahwa semua data yang digunakan dalam pembangunan program kesejaan terkait dengan penerimaan bantunya sudah selesai dipenuhi.\nDengan demikronisinya, maka proses ini dapat dijalankan dengan mudah, jadi tidak ada batasan waktu atau jam tangan kerja yang harus ditungguhkan. Dari sini, seluruh data akan diserahkan ke Bapak Menteri Kesejaan, yaitu Bupati Kecamatan Sambong, sehingga bisa dipadukan dengan data yang didapat dari laporan laporan yang lainnya.",
+      "f1": 0.08602150537634409
+    }
+  ]
+}
