@@ -43,3 +43,11 @@ Berdasarkan rasional empiris dan hitung-hitungan *loss* inilah, **Qwen3-8B** din
 Bagi Anda yang ingin menggunakan hasil akhir dari seluruh rangkaian pipeline ini, model yang telah mahir dan di-CPT khusus untuk domain kemiskinan sudah diunggah dan bisa ditarik langsung lewat Hugging Face:
 
 **[alvinrifky/Qwen3-8B-AITF-CPT-v2](https://huggingface.co/alvinrifky/Qwen3-8B-AITF-CPT-v2)**
+
+---
+
+## Dataset Sampel
+Hasil ekstraksi dataset (versi mini) juga dapat diakses melalui:
+
+**[alvinrifky/AITF-dataset](https://huggingface.co/datasets/alvinrifky/AITF-dataset)**
+*(Hanya untuk keperluan testing dan demonstrasi pipeline).*

@@ -93,6 +93,16 @@ python formatter.py
 
 ---
 
+## 📦 Akses Dataset (Sample)
+Bagi Anda yang ingin melihat atau menguji coba contoh hasil dari seluruh rangkaian pipeline ini, dataset dalam format `.jsonl` telah tersedia secara publik di Hugging Face:
+
+👉 **[alvinrifky/AITF-dataset](https://huggingface.co/datasets/alvinrifky/AITF-dataset)**
+
+> [!IMPORTANT]
+> Dataset yang dibagikan di atas adalah **versi terbatas (sampel kecil)** untuk keperluan demonstrasi/testing, bukan merupakan keseluruhan data hasil crawling lengkap dari proyek ini.
+
+---
+
 ## 🎯 Panduan Strategi Crawling & Scraping
 
 ### 1. Google Dork & Format Dork
