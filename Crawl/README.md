@@ -7,16 +7,17 @@ Folder ini berisi pipeline lengkap untuk melakukan pencarian URL, mengekstrak ar
 ```text
 Crawl/
 ├── data/                       # Folder untuk semua input dan output data
-│   ├── keywords.txt            # Input kata kunci untuk crawler
+│   ├── keywords.txt            # Input kata kunci untuk crawler berita (web)
 │   ├── scraper_state.txt       # Tracker otomatis artikel yang sudah di-scrape
 │   ├── dataset.jsonl           # Hasil akhir yang sudah diformat dan dihitung tokennya
-│   ├── urls/                   # Output dari crawler (list_url.txt dan hasil per-domain)
-│   ├── PDF/                    # Masukkan file PDF ke folder ini untuk diekstrak
+│   ├── urls/                   # Output dari crawler (list_url.txt, jurnal_keyword.txt, dll)
+│   ├── PDF/                    # Masukkan file PDF/DOCX ke folder ini untuk diekstrak
 │   └── markdown/               # Output hasil ekstraksi dari web scraper dan PDF extractor
 │
 ├── crawler.py                  # Script 1: Mencari URL berita dari mesin pencari
 ├── scraper.py                  # Script 2: Mengekstrak isi artikel dari URL web
-├── pdf_extractor.py            # Script 3: Mengekstrak isi dokumen dari file PDF
+├── pdf_extractor.py            # Script 3: Mengekstrak isi dokumen dari file PDF & DOCX
+├── crawlling_pdf.py            # Script Tambahan: Mencari dan men-download file PDF secara otomatis
 ├── formatter.py                # Script 4: Mengubah file .md menjadi dataset.jsonl
 ├── debug.py                    # Script untuk mengetes selektor website baru
 ├── upload_drive.py             # Script untuk mengupload hasil dataset ke Google Drive
@@ -58,20 +59,27 @@ Alur ini digunakan untuk mengambil data berupa teks artikel berita langsung dari
   ...
   ```
 
-### 2. Ekstraksi dari Dokumen (PDF Extractor)
-Alur ini difokuskan khusus untuk mengambil informasi berupa teks dari dokumen riset atau laporan berformat `.pdf`. Proses ini sengaja dipisahkan dari Web Scraper agar struktur data tidak bercampur aduk, serta mencegah error yang timbul karena perbedaan sifat format HTML dan PDF.
+### 2. Ekstraksi dari Dokumen (PDF & DOCX)
+Alur ini difokuskan khusus untuk mengambil informasi berupa teks dari dokumen riset atau laporan berformat `.pdf` dan `.docx`.
 
-- **Mengekstrak Teks PDF**
-  Taruh semua file PDF Anda ke dalam folder `data/PDF/`. Lalu jalankan:
+- **A. Pencarian & Download PDF Otomatis**
+  Buka file `data/urls/jurnal_keyword.txt` dan isi dengan keyword pencarian dokumen (filetype:pdf). Lalu jalankan:
+  ```bash
+  python crawlling_pdf.py
+  ```
+  [INFO] File akan otomatis terdownload ke folder `data/PDF/`. Script ini akan melewati file yang sudah pernah didownload.
+
+- **B. Mengekstrak Teks Dokumen**
+  Setelah file PDF/DOCX terkumpul di folder `data/PDF/`, jalankan:
   ```bash
   python pdf_extractor.py
   ```
-  [INFO] Setiap teks dalam dokumen PDF akan ditarik dan disimpan sebagai file `.md` ke dalam folder yang sama yaitu `data/markdown/`.
-  
+  [INFO] Script akan mengekstrak teks, membersihkan **karakter alien** dan membuang bagian **Daftar Isi**, lalu menyimpannya sebagai file `.md` ke `data/markdown/`.
+
   *Contoh Output PDF Extractor (Teks Buku/Jurnal):*
   ```markdown
   # Laporan_Penanganan_Kemiskinan_2025
-
+  
   BAB I PENDAHULUAN
   Kemiskinan merupakan isu strategis yang harus ditangani...
   ```
