@@ -3,9 +3,7 @@ config.py
 credentials/
 
 # ── Data crawler (bisa sangat besar) ─────────────────────────────────────────
-data_raw/
-data/
-output/
+
 
 # ── Log files ────────────────────────────────────────────────────────────────
 logs/

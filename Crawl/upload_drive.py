@@ -144,7 +144,7 @@ def upload_data_raw(folder_path="data_raw", clean_file="data_training_cpt.jsonl"
                 body={"name": raw_name, "parents": [FOLDER_ID]},
                 media_body=media, fields="id", supportsAllDrives=True
             ).execute()
-            if notifier: notifier.send(f"📦 Raw Data Uploaded: {file_count} files ({size_kb} KB)")
+            if notifier: notifier.send(f"[INFO] Raw Data Uploaded: {file_count} files ({size_kb} KB)")
 
         # 2. Upload Clean JSONL (Zipped)
         if os.path.exists(clean_path):
@@ -158,12 +158,12 @@ def upload_data_raw(folder_path="data_raw", clean_file="data_training_cpt.jsonl"
             ).execute()
             
             token_str = f"{tokens / 1_000_000:.2f}M" if tokens > 1_000_000 else f"{tokens / 1_000:.1f}K"
-            if notifier: notifier.send(f"✨ Clean Data Uploaded! Token Count: ~{token_str} (Qwen2.5)")
+            if notifier: notifier.send(f"[SUCCESS] Clean Data Uploaded! Token Count: ~{token_str} (Qwen2.5)")
 
         return True, "Dual Upload Sukses"
 
     except Exception as e:
-        if notifier: notifier.send(f"❌ Upload Gagal: {e}")
+        if notifier: notifier.send(f"[ERROR] Upload Gagal: {e}")
         return False, str(e)
 
 
