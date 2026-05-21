@@ -5,7 +5,6 @@ import importlib
 import math
 import random
 import time
-import traceback
 from typing import Optional
 
 # ─────────────────────────────────────────────
@@ -16,6 +15,7 @@ def check_and_fix_environment():
     print("=" * 60)
     print("PEMERIKSAAN ENVIRONMENT")
     print("=" * 60)
+
     issues = []
 
     try:
@@ -25,189 +25,347 @@ def check_and_fix_environment():
         if torch.cuda.is_available():
             print(f"[OK] GPU            : {torch.cuda.get_device_name(0)}")
     except ImportError:
-        issues.append("torch"); print("[!!] PyTorch TIDAK ditemukan")
+        issues.append("torch")
+        print("[!!] PyTorch TIDAK ditemukan")
 
     try:
         import transformers
         print(f"[OK] Transformers   : {transformers.__version__}")
-        from transformers import AutoModelForCausalLM  # noqa
     except ImportError:
-        issues.append("transformers"); print("[!!] Transformers TIDAK ditemukan")
+        issues.append("transformers")
+        print("[!!] Transformers TIDAK ditemukan")
 
     try:
         import datasets
         print(f"[OK] Datasets       : {datasets.__version__}")
     except ImportError:
-        issues.append("datasets"); print("[!!] Datasets TIDAK ditemukan")
+        issues.append("datasets")
+        print("[!!] Datasets TIDAK ditemukan")
+
+    try:
+        import accelerate
+        print(f"[OK] Accelerate     : {accelerate.__version__}")
+    except ImportError:
+        issues.append("accelerate")
+        print("[WARN] Accelerate tidak ditemukan — direkomendasikan untuk Trainer")
 
     if issues:
+        print(f"\n[INFO] Menginstall paket yang kurang: {issues}")
         if "torch" in issues:
-            subprocess.check_call([sys.executable, "-m", "pip", "install",
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install",
                 "torch", "torchvision", "torchaudio",
-                "--index-url", "https://download.pytorch.org/whl/cu118", "--quiet"])
+                "--index-url", "https://download.pytorch.org/whl/cu118", "--quiet"
+            ])
         remaining = [p for p in issues if p != "torch"]
         if remaining:
             subprocess.check_call([sys.executable, "-m", "pip", "install", *remaining, "--quiet"])
         importlib.invalidate_caches()
 
-    import torch
-    x = torch.tensor([1.0, 2.0]); _ = x.sum()
-    print(f"\n[OK] PyTorch berfungsi normal")
-    return torch
+    try:
+        import torch
+        _ = torch.tensor([1.0, 2.0]).sum()
+        print(f"\n[OK] PyTorch berfungsi normal")
+        return torch
+    except Exception as e:
+        print(f"\n[FATAL] PyTorch masih bermasalah: {e}")
+        sys.exit(1)
 
 
-def setup_hf_token():
+def setup_hf_token() -> Optional[str]:
     token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN")
+
+    # Kalau token ada di environment
     if token:
         print(f"\n[OK] HF Token ditemukan dari environment variable")
         return token
-    print("\n[INFO] HF Token tidak ditemukan (Qwen publik, biasanya tidak perlu)")
-    return None
 
+    print("\n" + "=" * 60)
+    print("HUGGING FACE TOKEN")
+    print("=" * 60)
+    print("Model LLaMA memerlukan autentikasi.")
+    print("Dapatkan token di: https://huggingface.co/settings/tokens\n")
 
+    # Cek apakah terminal interactive
+    if not sys.stdin.isatty():
+        print("[INFO] Non-interactive mode terdeteksi (nohup/screen).")
+        print("[INFO] Tanpa token — model LLaMA akan dilewati")
+        return None
+
+    try:
+        token = input("Masukkan HF Token (kosongkan untuk skip model LLaMA): ").strip()
+    except (EOFError, KeyboardInterrupt, OSError):
+        token = ""
+
+    if token:
+        os.environ["HUGGINGFACE_TOKEN"] = token
+
+        try:
+            from huggingface_hub import login
+
+            login(token=token, add_to_git_credential=False)
+            print("[OK] Login HuggingFace berhasil")
+
+        except Exception as e:
+            print(f"[WARN] huggingface_hub login gagal: {e}")
+
+    else:
+        print("[INFO] Tanpa token — model LLaMA akan dilewati")
+
+    return token or None
 # ─────────────────────────────────────────────
 # KONFIGURASI
 # ─────────────────────────────────────────────
-
-# Path ke model CPT Anda (bisa diganti sesuai dengan lokasi penyimpanan model)
-CPT_MODEL_PATH = os.path.abspath("./output/qwen3_cpt_8b_v2_final")
-
 MODELS = [
-    "Qwen/Qwen3-8B",
-    CPT_MODEL_PATH,
+    "meta-llama/Meta-Llama-3-8B",
+    "meta-llama/Llama-3.1-8B",
+    "Qwen/Qwen3.5-9B-Base",
+    "Qwen/Qwen3-8B-Base",
+    "google/gemma-3-12b",
+    "mistralai/Mistral-7B-v0.3",
 ]
 
-MODEL_LABELS = {
-    "Qwen/Qwen3-8B-Base" : "Qwen3-8B (Base)",
-    CPT_MODEL_PATH  : "Qwen3-8B (CPT-MKN1)",
-}
-
-SAMPLE_FRACTION = 0.01
-WIKI_FRACTION   = 0.20
-SEED            = 42
-MAX_LENGTH      = 2048
-STRIDE          = 512
-RESULTS_FILE    = "perplexity_results.csv"
-PLOT_FILE       = "perplexity_comparison.png"
+SEED                   = 42
+MAX_LENGTH             = 2048          # panjang tiap chunk (token)
+MIN_CHUNK_TOKENS       = 32            # chunk lebih pendek dari ini dibuang
+MAIN_SAMPLE_FRACTION   = 0.02          # ambil 2% dari dataset utama
+WIKI_RATIO             = 0.20          # wiki = 20% dari jumlah main sample
+PER_DEVICE_EVAL_BATCH  = 4
+LATENCY_WARMUP_RUNS    = 2
+LATENCY_BENCH_RUNS     = 5
+LATENCY_GEN_TOKENS     = 128
+RESULTS_FILE           = "perplexityV3_results.csv"
+PLOT_FILE              = "perplexityV3_comparison.png"
 
 
 # ─────────────────────────────────────────────
-# 1. MUAT & SAMPEL DATASET
+# 1. LOAD & SIAPKAN DATASET
 # ─────────────────────────────────────────────
+def load_eval_texts(seed: int = SEED) -> list[str]:
+    from datasets import load_dataset
 
-def load_and_sample_dataset(
-    domain_fraction: float = SAMPLE_FRACTION,
-    wiki_fraction:   float = WIKI_FRACTION,
-    seed:            int   = SEED,
-) -> list:
-    from datasets import load_dataset, concatenate_datasets
-
-    print("\n" + "=" * 60)
-    print("MEMUAT DATASET")
+    # ── Main dataset ─────────────────────────────────────────
+    print("=" * 60)
+    print("LOAD MAIN DATASET")
     print("=" * 60)
 
-    print("\n[1/3] Memuat dataset domain...")
-    # Mengunduh dataset target (domain spesifik) langsung dari Hugging Face Hub
-    dataset_hf = load_dataset(
+    main_ds = load_dataset(
         "alvinrifky/Crawling-MKN_1",
         data_files="clean/data_training_mixed.jsonl"
     )
-    split_name = list(dataset_hf.keys())[0]
-    ds_domain  = dataset_hf[split_name]
-    total      = len(ds_domain)
-    print(f"      Total domain   : {total:,} baris")
+    split_name = list(main_ds.keys())[0]
+    main_ds    = main_ds[split_name]
+    print(f"[INFO] Total dataset : {len(main_ds):,}")
 
-    text_col = None
-    for candidate in ("text", "content", "instruction", "input", "output"):
-        if candidate in ds_domain.column_names:
-            text_col = candidate; break
-    if text_col is None:
-        text_col = "__combined__"
-        ds_domain = ds_domain.map(
-            lambda row: {"__combined__": " ".join(str(v) for v in row.values())}
-        )
-    print(f"      Kolom teks     : '{text_col}'")
+    TEXT_COL = None
+    for c in ["text", "content", "instruction", "input", "output"]:
+        if c in main_ds.column_names:
+            TEXT_COL = c
+            break
+    if TEXT_COL is None:
+        raise ValueError("No text column found!")
+    print(f"[INFO] Text column   : {TEXT_COL}")
 
+    # Sample 2% dari main dataset
     random.seed(seed)
-    # Mengambil sebagian kecil dari dataset domain agar evaluasi berjalan lebih cepat namun tetap representatif
-    n_domain = max(1, int(total * domain_fraction))
-    idx      = random.sample(range(total), n_domain)
-    ds_domain_sampled = ds_domain.select(idx)
-    if text_col != "text":
-        ds_domain_sampled = ds_domain_sampled.rename_column(text_col, "text")
-    ds_domain_sampled = ds_domain_sampled.select_columns(["text"])
-    print(f"      Sampel domain  : {n_domain:,} baris")
+    n_main   = max(1, int(len(main_ds) * MAIN_SAMPLE_FRACTION))
+    indices  = random.sample(range(len(main_ds)), n_main)
+    main_texts = [
+        main_ds[idx][TEXT_COL]
+        for idx in indices
+        if isinstance(main_ds[idx][TEXT_COL], str) and main_ds[idx][TEXT_COL].strip()
+    ]
+    print(f"[INFO] Main sampled  : {len(main_texts):,}")
 
-    # Menghitung porsi tambahan dari Wikipedia untuk menguji General Knowledge (mendeteksi catastrophic forgetting)
-    n_wiki = max(1, int(n_domain * wiki_fraction))
-    print(f"\n[2/3] Memuat Wikipedia Indonesia ({n_wiki:,} baris)...")
-    ds_wiki = load_dataset("wikimedia/wikipedia", "20231101.id", split=f"train[:{n_wiki}]")
-    ds_wiki = ds_wiki.select_columns(["text"])
-    print(f"      Baris Wikipedia : {len(ds_wiki):,}")
+    # ── WikiText-2 ────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("LOAD WIKITEXT")
+    print("=" * 60)
 
-    # Menyatukan data domain dan Wikipedia, lalu mengacak barisnya agar evaluasi tidak bias ke satu topik saja
-    print(f"\n[3/3] Menggabungkan dan mengacak dataset...")
-    mixed_ds = concatenate_datasets([ds_domain_sampled, ds_wiki]).shuffle(seed=seed)
-    texts = [row["text"] for row in mixed_ds
-             if isinstance(row["text"], str) and len(row["text"].strip()) > 50]
-    print(f"      Total teks siap : {len(texts):,}")
-    return texts
+    wiki_ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
+    wiki_texts = [
+        row["text"]
+        for row in wiki_ds
+        if isinstance(row["text"], str) and len(row["text"].strip()) > 20
+    ]
+    print(f"[INFO] Wiki rows     : {len(wiki_texts):,}")
+
+    # Ambil 20% dari jumlah main sample
+    wiki_take  = int(len(main_texts) * WIKI_RATIO)
+    wiki_texts = random.sample(wiki_texts, min(wiki_take, len(wiki_texts)))
+    print(f"[INFO] Wiki sampled  : {len(wiki_texts):,}")
+
+    # ── Gabung + shuffle ─────────────────────────────────────
+    all_texts = main_texts + wiki_texts
+    random.seed(seed)
+    random.shuffle(all_texts)
+    print(f"\n[INFO] Final eval samples : {len(all_texts):,}  "
+          f"(main={len(main_texts):,} + wiki={len(wiki_texts):,})")
+
+    return all_texts
 
 
 # ─────────────────────────────────────────────
-# 2. HITUNG PERPLEXITY (dengan NaN guard)
+# 2. TOKENISASI + CHUNKING (fixed size, no overlap)
 # ─────────────────────────────────────────────
+def build_eval_dataset(texts: list[str], tokenizer, max_length: int, min_chunk: int):
+    """
+    Tokenisasi semua teks, potong menjadi chunk fixed MAX_LENGTH token
+    (tidak ada overlap/stride). Chunk terlalu pendek dibuang.
+    """
+    from datasets import Dataset
 
-def compute_perplexity(
-    model_name: str,
-    texts:      list,
-    hf_token:   Optional[str],
-    max_length: int = MAX_LENGTH,
-    stride:     int = STRIDE,
+    all_input_ids  = []
+    skipped_chunks = 0
+
+    for text in texts:
+        enc = tokenizer(text, return_tensors="pt", truncation=False)
+        ids = enc.input_ids[0].tolist()
+
+        # potong fixed, tanpa overlap
+        for i in range(0, len(ids), max_length):
+            chunk = ids[i : i + max_length]
+            if len(chunk) < min_chunk:
+                skipped_chunks += 1
+                continue
+            all_input_ids.append(chunk)
+
+    print(f"[INFO] Total chunks  : {len(all_input_ids):,}  "
+          f"(dibuang terlalu pendek: {skipped_chunks})")
+
+    return Dataset.from_dict({"input_ids": all_input_ids})
+
+
+# ─────────────────────────────────────────────
+# 3. BENCHMARK: LATENCY, THROUGHPUT, VRAM
+# ─────────────────────────────────────────────
+def benchmark_latency_throughput(
+    model,
+    tokenizer,
+    device: str,
+    prompt: str      = "Apa itu kecerdasan buatan?",
+    warmup_runs: int = LATENCY_WARMUP_RUNS,
+    bench_runs: int  = LATENCY_BENCH_RUNS,
+    gen_tokens: int  = LATENCY_GEN_TOKENS,
 ) -> dict:
-    # Fungsi ini menghitung nilai perplexity model menggunakan metode sliding window.
-    # Semakin kecil angka perplexity, semakin baik model memahami teks yang diberikan.
     import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM
-    from tqdm import tqdm
 
-    device   = "cuda" if torch.cuda.is_available() else "cpu"
-    label    = MODEL_LABELS.get(model_name, model_name.split("/")[-1])
-    is_local = os.path.isdir(model_name)
+    inputs    = tokenizer(prompt, return_tensors="pt").to(device)
+    input_len = inputs["input_ids"].shape[-1]
+
+    # Warmup
+    with torch.no_grad():
+        for _ in range(warmup_runs):
+            model.generate(
+                **inputs,
+                max_new_tokens=gen_tokens,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+    if device == "cuda":
+        torch.cuda.synchronize()
+
+    # Benchmark
+    latencies, tokens_generated = [], []
+    with torch.no_grad():
+        for _ in range(bench_runs):
+            t0  = time.perf_counter()
+            out = model.generate(
+                **inputs,
+                max_new_tokens=gen_tokens,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+            if device == "cuda":
+                torch.cuda.synchronize()
+            t1 = time.perf_counter()
+
+            latencies.append(t1 - t0)
+            tokens_generated.append(out.shape[-1] - input_len)
+
+    avg_latency    = sum(latencies) / len(latencies)
+    avg_tok        = sum(tokens_generated) / len(tokens_generated)
+    return {
+        "latency_sec"     : round(avg_latency, 3),
+        "throughput_tok_s": round(avg_tok / avg_latency, 2),
+    }
+
+
+# ─────────────────────────────────────────────
+# 4. HITUNG PERPLEXITY + SEMUA METRIK
+#
+#    PPL = exp(eval_loss)
+#    eval_loss = mean cross-entropy atas semua token
+#    (dihitung oleh HuggingFace Trainer, bukan rumus custom)
+# ─────────────────────────────────────────────
+def compute_perplexity(
+    model_name : str,
+    texts      : list[str],
+    hf_token   : Optional[str],
+    max_length : int = MAX_LENGTH,
+) -> dict:
+    import torch
+    from transformers import (
+        AutoTokenizer,
+        AutoModelForCausalLM,
+        DataCollatorForLanguageModeling,
+        Trainer,
+        TrainingArguments,
+    )
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     result = {
-        "model"        : model_name,
-        "label"        : label,
-        "perplexity"   : None,
-        "n_texts"      : len(texts),
-        "n_tokens"     : 0,
-        "n_skip_chunks": 0,
-        "time_sec"     : 0,
-        "error"        : None,
+        "model"           : model_name,
+        "params_B"        : None,
+        "perplexity"      : None,
+        "latency_sec"     : None,
+        "throughput_tok_s": None,
+        "vram_GB"         : None,
+        "n_texts"         : len(texts),
+        "n_tokens"        : 0,
+        "time_sec"        : 0,
+        "error"           : None,
     }
 
     print(f"\n{'='*60}")
-    print(f"Model  : {label}")
-    print(f"Path   : {model_name}")
+    print(f"Model  : {model_name}")
     print(f"Device : {device}")
     print(f"{'='*60}")
 
-    if is_local and not os.path.isdir(model_name):
-        result["error"] = f"Folder tidak ditemukan: {model_name}"
+    is_gated = model_name.startswith("meta-llama/")
+    if is_gated and not hf_token:
+        result["error"] = "Model LLaMA memerlukan HF Token."
         print(f"[SKIP] {result['error']}")
         return result
 
     t_start = time.time()
 
     try:
-        print("[1/3] Memuat tokenizer...")
+        # ── [1/5] Tokenizer ──────────────────────────────────
+        print("[1/5] Memuat tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained(
             model_name, token=hf_token, trust_remote_code=True,
         )
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        print("[2/3] Memuat model...")
+        # ── [2/5] Tokenisasi + chunking (fixed, no overlap) ──
+        print("[2/5] Tokenisasi & chunking (fixed size, no overlap)...")
+        eval_dataset = build_eval_dataset(
+            texts, tokenizer,
+            max_length=max_length,
+            min_chunk=MIN_CHUNK_TOKENS,
+        )
+        total_tokens        = sum(len(x) for x in eval_dataset["input_ids"])
+        result["n_tokens"]  = total_tokens
+        print(f"[INFO] Total token   : {total_tokens:,}")
+
+        # ── [3/5] Load model ─────────────────────────────────
+        print("[3/5] Memuat model...")
+        if device == "cuda":
+            torch.cuda.reset_peak_memory_stats()
+
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             token=hf_token,
@@ -220,177 +378,152 @@ def compute_perplexity(
             model = model.to(device)
         model.eval()
 
-        n_params = sum(p.numel() for p in model.parameters()) / 1e9
-        print(f"[OK] Model dimuat ({n_params:.2f}B params, device={device})")
+        n_params_B        = sum(p.numel() for p in model.parameters()) / 1e9
+        result["params_B"] = round(n_params_B, 3)
+        print(f"[OK] Model dimuat ({n_params_B:.3f}B parameter)")
+
+        # ── [4/5] Benchmark latency & throughput ─────────────
+        print("[4/5] Benchmark latency & throughput...")
+        bench = benchmark_latency_throughput(model, tokenizer, device)
+        result["latency_sec"]       = bench["latency_sec"]
+        result["throughput_tok_s"]  = bench["throughput_tok_s"]
+        print(f"[OK] Latency         : {bench['latency_sec']:.3f} s")
+        print(f"[OK] Throughput      : {bench['throughput_tok_s']:.2f} tok/s")
+
+        # Peak VRAM setelah benchmark
+        if device == "cuda":
+            torch.cuda.synchronize()
+            result["vram_GB"] = round(torch.cuda.max_memory_allocated() / 1024**3, 3)
+            print(f"[OK] VRAM (peak)     : {result['vram_GB']:.3f} GB")
+
+        # ── [5/5] Perplexity via Trainer ─────────────────────
+        # Rumus: PPL = exp(eval_loss)
+        #        eval_loss = rata-rata cross-entropy token
+        #        (Trainer menghitung NLL per token, kita exp()-kan)
+        print("[5/5] Evaluasi perplexity  [PPL = exp(eval_loss)] ...")
+
+        data_collator = DataCollatorForLanguageModeling(
+            tokenizer=tokenizer,
+            mlm=False,
+            pad_to_multiple_of=8 if device == "cuda" else None,
+        )
+        training_args = TrainingArguments(
+            output_dir="./eval_tmp",
+            per_device_eval_batch_size=PER_DEVICE_EVAL_BATCH,
+            fp16=(device == "cuda"),
+            dataloader_num_workers=2,
+            report_to="none",
+            log_level="error",
+        )
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=None,
+            eval_dataset=eval_dataset,
+            data_collator=data_collator,
+        )
+
+        eval_results = trainer.evaluate()
+        eval_loss    = eval_results["eval_loss"]
+        perplexity   = math.exp(eval_loss)         # PPL = e^(mean NLL)
 
     except Exception as e:
         result["error"] = str(e).split("\n")[0]
         print(f"[ERROR] {result['error']}")
-        traceback.print_exc()
         return result
-
-    # ── Kalkulasi Perplexity dengan NaN / Inf guard ────────────────
-    print("[3/3] Menghitung perplexity (sliding window + NaN guard)...")
-
-    total_nll    = 0.0
-    total_tokens = 0
-    skip_chunks  = 0
-    nan_warned   = False
-
-    for text in tqdm(texts, desc=label[:30], unit="teks"):
+    finally:
         try:
-            encodings = tokenizer(text, return_tensors="pt", truncation=False)
-        except Exception:
-            continue
+            del model
+        except NameError:
+            pass
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
-        input_ids = encodings.input_ids[0]
-        seq_len   = len(input_ids)
-        if seq_len < 2:
-            continue
-
-        prev_end = 0
-        for begin in range(0, seq_len, stride):
-            end        = min(begin + max_length, seq_len)
-            chunk      = input_ids[begin:end].unsqueeze(0).to(device)
-            target_len = end - prev_end
-            labels     = chunk.clone()
-            labels[0, :-target_len] = -100
-
-            try:
-                with torch.no_grad():
-                    outputs = model(chunk, labels=labels)
-                    nll     = outputs.loss.item()
-            except Exception as e:
-                skip_chunks += 1
-                prev_end = end
-                if end == seq_len:
-                    break
-                continue
-
-            # ── NaN / Inf guard ────────────────────────────────────
-            if not math.isfinite(nll) or nll < 0:
-                skip_chunks += 1
-                if not nan_warned:
-                    print(f"\n[WARN] Loss tidak valid ({nll}) di chunk — akan di-skip. "
-                          f"(Ini normal jika jarang terjadi)")
-                    nan_warned = True
-                prev_end = end
-                if end == seq_len:
-                    break
-                continue
-
-            # Clamp NLL ekstrem (misal karena token OOV atau teks rusak)
-            # Batas atas: ln(vocab_size) * 2, biasanya ~20 untuk LLM modern
-            nll = min(nll, 20.0)
-
-            total_nll    += nll * target_len
-            total_tokens += target_len
-            prev_end = end
-
-            if end == seq_len:
-                break
-
-    del model
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-
-    print(f"\n[DEBUG] total_nll    = {total_nll:.2f}")
-    print(f"[DEBUG] total_tokens = {total_tokens:,}")
-    print(f"[DEBUG] skip_chunks  = {skip_chunks:,}")
-
-    if total_tokens == 0:
-        result["error"] = "total_tokens = 0, semua chunk di-skip (kemungkinan model corrupt)"
-        print(f"[ERROR] {result['error']}")
-        return result
-
-    avg_nll    = total_nll / total_tokens
-    perplexity = math.exp(avg_nll)
-    elapsed    = time.time() - t_start
-
+    elapsed = time.time() - t_start
     result.update({
-        "perplexity"   : round(perplexity, 4),
-        "n_tokens"     : total_tokens,
-        "n_skip_chunks": skip_chunks,
-        "time_sec"     : round(elapsed, 1),
+        "perplexity": round(perplexity, 4),
+        "time_sec"  : round(elapsed, 1),
     })
 
-    print(f"\n[HASIL] avg NLL     : {avg_nll:.6f}")
-    print(f"[HASIL] Perplexity  : {perplexity:.4f}")
-    print(f"[INFO]  Token       : {total_tokens:,}")
-    print(f"[INFO]  Skip chunks : {skip_chunks:,}")
-    print(f"[INFO]  Waktu       : {elapsed/60:.1f} menit")
+    print(f"\n[HASIL] Eval loss    : {eval_loss:.6f}")
+    print(f"[HASIL] Perplexity   : {perplexity:.4f}  (= exp({eval_loss:.4f}))")
+    print(f"[INFO]  Token total  : {total_tokens:,}")
+    print(f"[INFO]  Waktu        : {elapsed/60:.1f} menit")
     return result
 
 
 # ─────────────────────────────────────────────
-# 3. VISUALISASI
+# 5. VISUALISASI
 # ─────────────────────────────────────────────
-
 def plot_results(df, output_file: str = PLOT_FILE):
-    # Membuat visualisasi perbandingan model dalam bentuk grafik batang (bar chart)
     import matplotlib.pyplot as plt
     import matplotlib.ticker as mticker
-    import matplotlib.patches as mpatches
 
-    df_plot = df[df["perplexity"].notna()].copy()
-    if df_plot.empty:
+    METRICS = [
+        ("params_B",         "Params (B)",             "Blues",      True),
+        ("perplexity",       "Perplexity ↓",           "RdYlGn_r",  False),
+        ("latency_sec",      "Latency (s) ↓",          "RdYlGn_r",  False),
+        ("throughput_tok_s", "Throughput (tok/s) ↑",   "RdYlGn",    True),
+        ("vram_GB",          "VRAM (GB) ↓",            "RdYlGn_r",  False),
+    ]
+
+    valid = df[df["perplexity"].notna()].copy()
+    if valid.empty:
         print("[WARN] Tidak ada hasil valid untuk divisualisasikan.")
         return
 
-    df_plot = df_plot.sort_values("perplexity")
-    labels  = df_plot["label"].tolist()
-    values  = df_plot["perplexity"].tolist()
-
-    colors = ["#2ecc71" if "CPT" in lbl else "#3498db" for lbl in labels]
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    bars = ax.barh(labels, values, color=colors, edgecolor="white", height=0.45)
-    for bar, val in zip(bars, values):
-        ax.text(val + max(values)*0.01, bar.get_y() + bar.get_height()/2,
-                f"{val:,.2f}", va="center", fontsize=12, fontweight="bold")
-
-    ax.set_xlabel("Perplexity (lebih rendah = lebih baik)", fontsize=12)
-    ax.set_title(
-        "Perbandingan Perplexity: Qwen3-8B Base vs CPT-MKN1\n"
-        "(Dataset: 5% domain + 20% Wikipedia Indonesia, di-shuffle)",
-        fontsize=13, fontweight="bold"
+    fig, axes = plt.subplots(1, len(METRICS), figsize=(5 * len(METRICS), max(4, len(valid) * 0.9 + 2)))
+    fig.suptitle(
+        "Perbandingan Base LLMs\n"
+        "Dataset: alvinrifky/Crawling-MKN_1 (2%) + WikiText-2 test (20% dari main sample)",
+        fontsize=12, fontweight="bold", y=1.02,
     )
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x:,.0f}"))
-    ax.invert_yaxis()
-    ax.grid(axis="x", linestyle="--", alpha=0.4)
 
-    patch_base = mpatches.Patch(color="#3498db", label="Base model (HuggingFace)")
-    patch_cpt  = mpatches.Patch(color="#2ecc71", label="CPT model (hasil training)")
-    ax.legend(handles=[patch_base, patch_cpt], loc="lower right", fontsize=10)
+    for ax, (col, title, cmap_name, higher_is_better) in zip(axes, METRICS):
+        if col not in valid.columns or valid[col].isna().all():
+            ax.set_visible(False)
+            continue
+
+        sub  = valid[["model", col]].dropna().copy()
+        sub["label"] = sub["model"].str.split("/").str[-1]
+        sub  = sub.sort_values(col, ascending=not higher_is_better)
+        vals = sub[col].tolist()
+        lbls = sub["label"].tolist()
+
+        cmap   = plt.colormaps[cmap_name]
+        colors = [cmap(i / max(len(vals) - 1, 1)) for i in range(len(vals))]
+        bars   = ax.barh(lbls, vals, color=colors, edgecolor="white", height=0.55)
+
+        x_off = max(vals) * 0.01
+        for bar, val in zip(bars, vals):
+            ax.text(
+                val + x_off,
+                bar.get_y() + bar.get_height() / 2,
+                f"{val:,.2f}", va="center", fontsize=9, fontweight="bold",
+            )
+
+        ax.set_title(title, fontsize=10, fontweight="bold")
+        ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x:,.1f}"))
+        ax.invert_yaxis()
+        ax.grid(axis="x", linestyle="--", alpha=0.4)
 
     plt.tight_layout()
-    plt.savefig(output_file, dpi=150)
+    plt.savefig(output_file, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"\n[INFO] Grafik disimpan → {output_file}")
 
 
 # ─────────────────────────────────────────────
-# 4. MAIN
+# 6. MAIN
 # ─────────────────────────────────────────────
-
 def main():
     import pandas as pd
 
     check_and_fix_environment()
     hf_token = setup_hf_token()
 
-    print("\n" + "=" * 60)
-    print("VALIDASI PATH MODEL CPT")
-    print("=" * 60)
-    if os.path.isdir(CPT_MODEL_PATH):
-        cpt_files = os.listdir(CPT_MODEL_PATH)
-        print(f"[OK] Folder CPT ditemukan")
-        print(f"[OK] Isi: {cpt_files[:8]}{'...' if len(cpt_files)>8 else ''}")
-    else:
-        print(f"[ERROR] Folder CPT tidak ditemukan: {CPT_MODEL_PATH}")
-        sys.exit(1)
-
-    texts = load_and_sample_dataset()
+    # Load + mix + shuffle sekali, semua model pakai data yang sama
+    texts = load_eval_texts()
 
     results = []
     for model_name in MODELS:
@@ -400,32 +533,29 @@ def main():
         print(f"[INFO] Progress tersimpan → {RESULTS_FILE}")
 
     df = pd.DataFrame(results)
+
     print("\n" + "=" * 60)
-    print("RINGKASAN HASIL PERPLEXITY")
+    print("RINGKASAN HASIL")
     print("=" * 60)
 
     valid = df[df["perplexity"].notna()].sort_values("perplexity").copy()
+    valid["model_short"] = valid["model"].str.split("/").str[-1]
+
+    COLS = ["model_short", "params_B", "perplexity", "latency_sec", "throughput_tok_s", "vram_GB"]
+    COLS = [c for c in COLS if c in valid.columns]
+
     if not valid.empty:
-        print(valid[["label", "perplexity", "n_tokens", "n_skip_chunks", "time_sec"]].to_string(index=False))
+        print(valid[COLS].to_string(index=False))
         best = valid.iloc[0]
-        print(f"\n🏆 Model terbaik  : {best['label']}  →  PPL = {best['perplexity']:,.4f}")
-        if len(valid) == 2:
-            worst = valid.iloc[-1]
-            diff  = worst["perplexity"] - best["perplexity"]
-            pct   = (diff / worst["perplexity"]) * 100
-            print(f"📉 Selisih PPL    : {diff:,.4f}  ({pct:.1f}% lebih rendah)")
-            if "CPT" in best["label"]:
-                print("✅ CPT model LEBIH BAIK dari base model pada dataset ini!")
-            else:
-                print("⚠️  Base model masih lebih baik — CPT perlu iterasi lebih lanjut.")
+        print(f"\n🏆 Model terbaik (PPL) : {best['model_short']}  →  PPL = {best['perplexity']:,.4f}")
     else:
         print("Tidak ada model yang berhasil dievaluasi.")
 
     failed = df[df["error"].notna()]
     if not failed.empty:
-        print("\n⚠️  Model yang gagal:")
+        print("\n⚠️  Model yang gagal/dilewati:")
         for _, row in failed.iterrows():
-            print(f"   • {row['label']}: {str(row['error'])[:120]}")
+            print(f"   • {row['model'].split('/')[-1]}: {row['error'][:120]}")
 
     df.to_csv(RESULTS_FILE, index=False)
     print(f"\n[INFO] Hasil final → {RESULTS_FILE}")
